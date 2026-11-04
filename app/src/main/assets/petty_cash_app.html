@@ -1,0 +1,2135 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>سامانه هوشمند تنخواه‌گردانی انبار | متصل به بلوبانک</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Vazirmatn', 'Inter', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .blu-gradient {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+    }
+    .blu-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    }
+    .num-fa {
+      font-feature-settings: "ss01";
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .print-sheet {
+        box-shadow: none !important;
+        border: 2px solid #000 !important;
+        margin: 0 !important;
+        padding: 16px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .print-table th, .print-table td {
+        border: 1px solid #000 !important;
+        padding: 6px 8px !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Header -->
+  <header class="blu-gradient text-white shadow-lg no-print sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center border border-white/25 shadow-inner">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight">سامانه هوشمند تنخواه‌گردانی انبار</h1>
+            <span class="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-medium backdrop-blur">BluBank Sync</span>
+          </div>
+          <p class="text-xs text-blue-100 mt-0.5">مجتبی حنفی • سرپرست انبار (روژین / طلوع سلامت ژیک - آکوپ / وانا دارو گستر)</p>
+        </div>
+      </div>
+
+      <!-- Quick Status & Currency Switch -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div class="bg-slate-900/30 backdrop-blur px-3.5 py-1.5 rounded-xl border border-white/15 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs text-blue-100">موجودی فعلی تنخواه:</span>
+          <span id="headerBalance" class="text-sm font-bold text-white dir-ltr">۸۳۵,۰۴۹,۹۸۴ ریال</span>
+        </div>
+
+        <button id="toggleCurrencyBtn" type="button" class="bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3 py-2 rounded-xl border border-white/20 transition flex items-center gap-1.5">
+          <span>نمایش:</span>
+          <span id="currencyUnitBadge" class="underline font-bold">ریال</span>
+        </button>
+
+        <button id="openQuickAddBtn" type="button" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/>
+          </svg>
+          <span>ثبت تراکنش / پیامک بلو</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-blue-900/40 border-t border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto no-scrollbar gap-1 py-1.5">
+        <button data-tab="dashboard" class="nav-tab active-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition flex items-center gap-2 bg-white text-blue-800 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          <span>داشبورد و تحلیل</span>
+        </button>
+        <button data-tab="blubank" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 text-blue-100 hover:bg-white/10">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>اتصال هوشمند بلوبانک (پیامک و CSV)</span>
+        </button>
+        <button data-tab="expenses" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 text-blue-100 hover:bg-white/10">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span>ریز هزینه‌های انبار (رسمی / غیررسمی / آکوپ)</span>
+        </button>
+        <button data-tab="report" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 text-blue-100 hover:bg-white/10">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <span>چاپ صورت خلاصه تنخواه (فرم دفتر)</span>
+        </button>
+        <button data-tab="ledger" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 text-blue-100 hover:bg-white/10">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+          <span>دفتر کل و تراز تنخواه (۱۴۰۵)</span>
+        </button>
+        <button data-tab="mobile" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 hover:bg-emerald-500/30">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <span>📲 نصب روی گوشی + دریافت خودکار پیامک</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification -->
+  <div id="toastBox" class="fixed bottom-5 left-5 z-50 hidden bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 text-sm no-print">
+    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+    <span id="toastText">عملیات با موفقیت انجام شد</span>
+  </div>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tab-dashboard" class="tab-panel space-y-6 no-print">
+      <!-- Top KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="blu-card text-white rounded-2xl p-5 shadow-md relative overflow-hidden">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs text-blue-200 font-medium">مانده فعلی تنخواه (دفتر ۱۴۰۵)</p>
+              <h2 id="kpiBalance" class="text-2xl font-extrabold mt-2">۸۳۵,۰۴۹,۹۸۴</h2>
+              <p id="kpiBalanceUnit" class="text-xs text-blue-300 mt-1">ریال (معادل ۸۳,۵۰۴,۹۹۸ تومان)</p>
+            </div>
+            <span class="bg-blue-500/30 p-2.5 rounded-xl border border-blue-400/30 text-xs font-bold">BluCard</span>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-blue-200">
+            <span>تنخواه گردان: مجتبی حنفی</span>
+            <span class="text-emerald-300 font-semibold">تراز مثبت</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs text-slate-500 font-medium">مجموع واریزی شرکت + اول دوره (۱۴۰۵)</p>
+              <h2 id="kpiTotalDeposits" class="text-2xl font-extrabold text-emerald-600 mt-2">۱۷,۵۸۶,۱۲۷,۸۰۴</h2>
+              <p class="text-xs text-slate-400 mt-1">۲۶ مرحله شارژ تنخواه + اول دوره</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-500">آخرین شارژ: ۱۴۰۵/۰۷/۲۶</span>
+            <span class="font-bold text-emerald-700">+۷۰۰,۰۰۰,۰۰۰ ریال</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs text-slate-500 font-medium">جمع هزینه‌های رسمی انبار (۱ تا ۱۴)</p>
+              <h2 id="kpiTotalOfficial" class="text-2xl font-extrabold text-blue-700 mt-2">۱۴,۸۲۳,۹۰۷,۸۲۰</h2>
+              <p class="text-xs text-slate-400 mt-1">بارنامه تبریز، سوخت، تعمیرات، ملزومات</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-500">تنخواه آکوپ (۱ تا ۶):</span>
+            <span id="kpiAkopSub" class="font-bold text-indigo-600">۱۳۲,۰۰۰,۰۰۰ ریال</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs text-slate-500 font-medium">جمع هزینه‌های غیررسمی (۱ تا ۱۴)</p>
+              <h2 id="kpiTotalUnofficial" class="text-2xl font-extrabold text-amber-600 mt-2">۱,۹۵۵,۱۷۰,۰۰۰</h2>
+              <p class="text-xs text-slate-400 mt-1">کارگر روزمزد انبار و تخلیه بار</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-500">سهم از کل هزینه‌ها:</span>
+            <span class="font-bold text-amber-700">۱۱.۶٪ کل مخارج</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-800">روند هزینه‌های تنخواه انبار در سال ۱۴۰۵ (به تفکیک شماره تنخواه ۱ تا ۱۴)</h3>
+              <p class="text-xs text-slate-500">مقایسه تنخواه رسمی و غیررسمی تحویل شده به دفتر مرکزی</p>
+            </div>
+            <span class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-semibold">داده‌های واقعی اکسل ۱۴۰۵</span>
+          </div>
+          <div class="relative h-72">
+            <canvas id="periodChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="mb-4">
+            <h3 class="text-base font-bold text-slate-800">تفکیک هوشمند سرفصل هزینه‌ها</h3>
+            <p class="text-xs text-slate-500">بر اساس دسته‌بندی خودکار تراکنش‌های انبار</p>
+          </div>
+          <div class="relative h-72">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Shortcut Cards for Mojtaba -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg">شرکت آرایشی بهداشتی روژین</span>
+              <span class="text-xs text-slate-400">۱۴ دوره رسمی + ۱۴ غیررسمی</span>
+            </div>
+            <h4 class="font-bold text-slate-800 mt-3">آخرین دوره: تنخواه شماره ۱۴ (۱۴۰۵/۰۷/۲۸)</h4>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              جمع رسمی ۱۴: <strong class="text-slate-900">۲,۰۶۹,۹۲۶,۰۰۰ ریال</strong> • جمع غیررسمی ۱۴: <strong class="text-slate-900">۲۱۶,۰۰۰,۰۰۰ ریال</strong>
+            </p>
+          </div>
+          <button type="button" data-goto-report="rojin-official-14" class="mt-4 w-full bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold py-2.5 rounded-xl transition">
+            مشاهده و چاپ فرم تنخواه ۱۴ روژین ←
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg">شرکت طلوع سلامت ژیک (آکوپ)</span>
+              <span class="text-xs text-slate-400">۶ دوره رسمی مرجوعی</span>
+            </div>
+            <h4 class="font-bold text-slate-800 mt-3">آخرین دوره: تنخواه شماره ۰۶ آکوپ (۱۴۰۵/۰۷/۲۸)</h4>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              شامل مرجوعی مجید پخش سپاهان و آران تجارت شیراز به جمع <strong class="text-slate-900">۵۴,۵۰۰,۰۰۰ ریال</strong>
+            </p>
+          </div>
+          <button type="button" data-goto-report="akop-official-6" class="mt-4 w-full bg-slate-100 hover:bg-purple-600 hover:text-white text-slate-700 text-xs font-bold py-2.5 rounded-xl transition">
+            مشاهده و چاپ فرم تنخواه ۰۶ آکوپ ←
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">هوش مصنوعی بلوبانک</span>
+              <span class="text-xs text-slate-400">تشخیص خودکار سرفصل</span>
+            </div>
+            <h4 class="font-bold text-slate-800 mt-3">تبدیل پیامک بلوبانک به ردیف تنخواه</h4>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              کافیست پیامک برداشت یا واریز بلوبانک یا فایل CSV صورت‌حساب بلو را وارد کنید تا تاریخ، مبلغ و نوع تنخواه (رسمی/غیررسمی) خودکار ثبت شود.
+            </p>
+          </div>
+          <button type="button" data-switch-tab="blubank" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition">
+            ورود به بخش هوشمند بلوبانک ←
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: BLUBANK SMART SYNC -->
+    <section id="tab-blubank" class="tab-panel hidden space-y-6 no-print">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Column: SMS Parser & CSV Upload -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">blu</div>
+                <div>
+                  <h3 class="text-base font-bold text-slate-800">خوانشگر هوشمند پیامک و نوتیفیکیشن بلوبانک</h3>
+                  <p class="text-xs text-slate-500">متن پیامک بلوبانک (یا چند پیامک زیر هم) را اینجا پیست کنید</p>
+                </div>
+              </div>
+              <div class="flex gap-1.5">
+                <button id="loadSampleSmsExpense" type="button" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-2.5 py-1.5 rounded-lg transition">نمونه پیامک هزینه</button>
+                <button id="loadSampleSmsDeposit" type="button" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1.5 rounded-lg transition">نمونه پیامک شارژ تنخواه</button>
+              </div>
+            </div>
+
+            <textarea id="bluSmsInput" rows="5" class="w-full rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 p-3.5 text-sm leading-relaxed outline-none" placeholder="مثال:
+بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۳۴۰,۰۰۰,۰۰۰ ریال
+از حساب، کارت به کارت / پایا
+بابت: کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129310
+تاریخ ۱۴۰۵/۰۸/۰۲ - ۱۰:۴۵
+موجودی: ۴۹۵,۰۴۹,۹۸۴ ریال"></textarea>
+
+            <!-- Smart Assignment Settings -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">شرکت هدف:</label>
+                <select id="bluTargetCompany" class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold">
+                  <option value="rojin">شرکت آرایشی بهداشتی روژین</option>
+                  <option value="akop">شرکت طلوع سلامت ژیک (آکوپ)</option>
+                  <option value="vana">شرکت وانا دارو گستر</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">شماره تنخواه مقصد:</label>
+                <input id="bluTargetTankhahNo" type="number" value="15" min="1" class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-bold" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">تفکیک رسمی / غیررسمی:</label>
+                <select id="bluTargetType" class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold">
+                  <option value="auto">هوشمند (تشخیص خودکار کارگر روزمزد)</option>
+                  <option value="official">تنخواه رسمی</option>
+                  <option value="unofficial">تنخواه غیررسمی</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <button id="parseSmsBtn" type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                <span>تحلیل هوشمند و استخراج تراکنش</span>
+              </button>
+
+              <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>بارگذاری فایل CSV صورت‌حساب بلوبانک</span>
+                <input id="bluCsvFileInput" type="file" accept=".csv,.txt" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Smart Rules Explanation -->
+          <div class="bg-blue-950 text-white rounded-2xl p-5 shadow-sm">
+            <h4 class="text-sm font-bold text-blue-200 flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>قوانین موتور هوشمند دسته‌بندی انبار شما (بر اساس سوابق ۱۴۰۳ تا ۱۴۰۵)</span>
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 text-xs text-blue-100">
+              <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                <span class="font-bold text-amber-300 block mb-1">۱. تشخیص خودکار تنخواه غیررسمی:</span>
+                تراکنش‌های حاوی کلیدواژه «کارگر روزمزد»، «ایاب و ذهاب کارگر»، «تخلیه بار»، «پاداش» یا مبالغ مضرب ۳۶,۰۰۰,۰۰۰ ریال کارگر به صورت خودکار در <strong>لیست غیررسمی</strong> قرار می‌گیرند.
+              </div>
+              <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                <span class="font-bold text-purple-300 block mb-1">۲. تشخیص خودکار تنخواه آکوپ (طلوع سلامت ژیک):</span>
+                تراکنش‌های حاوی «مرجوعی از پخش...» (مانند مجید پخش سپاهان، آران تجارت شیراز، گیل مهر رشت، بهاران تجارت مشهد) پیشنهاد ثبت در <strong>تنخواه آکوپ</strong> می‌دهند.
+              </div>
+              <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                <span class="font-bold text-sky-300 block mb-1">۳. تشخیص بارنامه تبریز و سوخت:</span>
+                مبالغ پمپ بنزین و جایگاه سوخت با عنوان استاندارد <strong>«سوخت خودرو»</strong> و بارنامه‌ها با قالب استاندارد <strong>«کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه ...»</strong> فرمت می‌شوند.
+              </div>
+              <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                <span class="font-bold text-emerald-300 block mb-1">۴. تشخیص شارژ تنخواه (واریزی شرکت):</span>
+                واریزی‌های پایا/ساتنا (معمولاً ۳۰۰، ۴۰۰، ۵۰۰ یا ۷۰۰ میلیون ریال از حساب‌های ملی ۲۰۰۵ یا رفاه ۵۶۶۱) مستقیم به <strong>دفتر کل واریزی‌ها</strong> اضافه می‌شوند.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Parsed Preview & Approval Queue -->
+        <div class="lg:col-span-5">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 h-full flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800">پیش‌نمایش تراکنش‌های استخراج‌شده</h3>
+                <span id="parsedCountBadge" class="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">۰ مورد</span>
+              </div>
+
+              <div id="parsedPreviewList" class="mt-4 space-y-3 max-h-[420px] overflow-y-auto">
+                <div class="text-center py-12 text-slate-400 text-xs">
+                  پیامک بلوبانک را در کادر روبرو وارد کنید یا دکمه «نمونه پیامک» را بزنید تا پیش‌نمایش هوشمند نمایش داده شود.
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between gap-2">
+              <button id="clearParsedBtn" type="button" class="text-xs text-slate-500 hover:text-rose-600 font-semibold px-3 py-2">پاک کردن لیست</button>
+              <button id="confirmParsedBtn" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow transition disabled:opacity-40" disabled>
+                تایید و ثبت نهایی در تنخواه و دفتر کل
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: EXPENSE ITEMS EXPLORER -->
+    <section id="tab-expenses" class="tab-panel hidden space-y-5 no-print">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">شرکت / مجموعه:</label>
+            <select id="filterCompany" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold bg-white">
+              <option value="all">همه شرکت‌ها (روژین + آکوپ)</option>
+              <option value="rojin">شرکت آرایشی بهداشتی روژین</option>
+              <option value="akop">شرکت طلوع سلامت ژیک (آکوپ)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">نوع تنخواه:</label>
+            <select id="filterType" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold bg-white">
+              <option value="all">همه (رسمی و غیررسمی)</option>
+              <option value="official">تنخواه رسمی</option>
+              <option value="unofficial">تنخواه غیررسمی (کارگر و...)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">شماره تنخواه:</label>
+            <select id="filterTankhahNo" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold bg-white">
+              <option value="all">همه دوره‌ها (۱ تا ۱۴)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">دسته‌بندی هوشمند:</label>
+            <select id="filterCategory" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold bg-white">
+              <option value="all">همه سرفصل‌ها</option>
+              <option value="باربری تبریز-تهران">باربری تبریز-تهران</option>
+              <option value="کارگر روزمزد">کارگر روزمزد</option>
+              <option value="سوخت خودرو">سوخت خودرو</option>
+              <option value="تعمیر و نگهداری خودرو">تعمیر و نگهداری خودرو</option>
+              <option value="ملزومات و مصرفی انبار">ملزومات و مصرفی انبار</option>
+              <option value="مواد اولیه و باربری شهری">مواد اولیه و باربری شهری</option>
+              <option value="مرجوعی و پخش (آکوپ/سایر)">مرجوعی و پخش (آکوپ/سایر)</option>
+              <option value="قبوض و اینترنت">قبوض و اینترنت</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">جستجو در شرح یا شماره بارنامه:</label>
+            <input id="filterSearch" type="text" placeholder="مثلاً: 8129293 یا پراید یا سلفون..." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs outline-none focus:border-blue-600" />
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-4 text-xs">
+            <span class="text-slate-500">تعداد ردیف‌های فیلتر شده: <strong id="filteredCount" class="text-slate-900">۰</strong></span>
+            <span class="text-slate-500">جمع مبلغ فیلتر شده: <strong id="filteredSum" class="text-blue-700 text-sm">۰ ریال</strong></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="exportFilteredCsvBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl transition">
+              خروجی اکسل (CSV) از این جدول
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-right text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4 font-bold">ردیف</th>
+                <th class="py-3 px-4 font-bold">شرکت</th>
+                <th class="py-3 px-4 font-bold">شماره تنخواه</th>
+                <th class="py-3 px-4 font-bold">تاریخ (روز/ماه)</th>
+                <th class="py-3 px-4 font-bold">سرفصل هوشمند</th>
+                <th class="py-3 px-4 font-bold">شرح هزینه (مطابق سند)</th>
+                <th class="py-3 px-4 font-bold">مبلغ ناخالص</th>
+                <th class="py-3 px-4 font-bold text-center">عملیات</th>
+              </tr>
+            </thead>
+            <tbody id="expensesTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: OFFICIAL OFFICE REPORT GENERATOR (PRINTABLE) -->
+    <section id="tab-report" class="tab-panel hidden space-y-6">
+      <!-- Report Controls (Hidden in Print) -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 no-print">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">تولید فرم رسمی «صورت خلاصه هزینه‌های انجام شده انبار» برای ارائه به دفتر</h3>
+            <p class="text-xs text-slate-500 mt-0.5">دقیقاً مطابق فرمت اکسل‌های شما (روژین، طلوع سلامت ژیک - آکوپ، وانا دارو گستر) آماده پرینت A4 و امضا</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="printReportBtn" type="button" class="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              <span>چاپ فرم / ذخیره PDF (A4)</span>
+            </button>
+            <button id="exportSingleReportCsvBtn" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>دانلود فایل اکسل این صورت‌خلاصه</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">انتخاب سربرگ شرکت:</label>
+            <select id="reportCompanySelect" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold bg-white">
+              <option value="rojin">شرکت آرایشی بهداشتی روژین (سهامی خاص)</option>
+              <option value="akop">شرکت طلوع سلامت ژیک (سهامی خاص) - آکوپ</option>
+              <option value="vana">شرکت وانا دارو گستر (سهامی خاص)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">نوع صورت تنخواه:</label>
+            <select id="reportTypeSelect" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold bg-white">
+              <option value="official">تنخواه رسمی</option>
+              <option value="unofficial">تنخواه غیررسمی (کارگر روزمزد)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">انتخاب شماره تنخواه:</label>
+            <select id="reportNumberSelect" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold bg-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">تاریخ تهیه گزارش:</label>
+            <input id="reportPrepDateInput" type="text" value="1405/07/28" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-center" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Printable Official Form Sheet -->
+      <div class="bg-white rounded-2xl p-6 sm:p-10 shadow-md border-2 border-slate-800 max-w-4xl mx-auto print-sheet">
+        <div class="text-left text-xs font-bold text-slate-700 mb-1">(ارقام به ریال)</div>
+        <div class="text-center border-b-2 border-slate-800 pb-4 mb-4">
+          <h2 id="sheetCompanyTitle" class="text-lg sm:text-xl font-extrabold text-slate-900">شرکت آرایشی بهداشتی روژین (سهامی خاص)</h2>
+          <h3 id="sheetSubTitle" class="text-sm sm:text-base font-bold text-slate-800 mt-1">صورت خلاصه هزینه‌های انجام شده انبار</h3>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm font-bold border border-slate-800 rounded-lg p-3 mb-4 bg-slate-50/60">
+          <div>شماره تنخواه: <span id="sheetTankhahNo" class="text-blue-900">14 (رسمی)</span></div>
+          <div>نام و نام خانوادگی: <span class="text-slate-900">مجتبی حنفی</span></div>
+          <div>نام واحد: <span class="text-slate-900">انبار</span></div>
+          <div>تاریخ تهیه: <span id="sheetPrepDate" class="text-slate-900">1405/07/28</span></div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse border border-slate-800 text-xs sm:text-sm print-table">
+            <thead>
+              <tr class="bg-slate-100 text-slate-900">
+                <th class="border border-slate-800 py-2 px-3 w-14 text-center">ردیف</th>
+                <th class="border border-slate-800 py-2 px-3 w-16 text-center">روز</th>
+                <th class="border border-slate-800 py-2 px-3 w-16 text-center">ماه</th>
+                <th class="border border-slate-800 py-2 px-3 w-28 text-center">شماره فاکتور</th>
+                <th class="border border-slate-800 py-2 px-3 text-right">شرح</th>
+                <th class="border border-slate-800 py-2 px-3 w-44 text-left">مبلغ ناخالص (ریال)</th>
+              </tr>
+            </thead>
+            <tbody id="sheetTableBody"></tbody>
+            <tfoot>
+              <tr class="bg-slate-100 font-extrabold text-slate-900">
+                <td colspan="5" class="border border-slate-800 py-2.5 px-4 text-left">جمع کل (ریال):</td>
+                <td id="sheetTotalAmount" class="border border-slate-800 py-2.5 px-3 text-left text-base">0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mt-8 pt-4 text-xs sm:text-sm font-bold text-slate-800">
+          <div class="border border-slate-400 rounded-lg p-4 h-24 flex flex-col justify-between">
+            <span>امضاء تهیه کننده :</span>
+            <span class="text-slate-500 text-xs">مجتبی حنفی</span>
+          </div>
+          <div class="border border-slate-400 rounded-lg p-4 h-24 flex flex-col justify-between">
+            <span>امضاء کنترل کننده :</span>
+            <span class="text-slate-400 text-xs">واحد مالی / حسابداری</span>
+          </div>
+          <div class="border border-slate-400 rounded-lg p-4 h-24 flex flex-col justify-between">
+            <span>امضاء تایید کننده :</span>
+            <span class="text-slate-400 text-xs">مدیریت</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: MASTER LEDGER (تنخواه1.xlsx) -->
+    <section id="tab-ledger" class="tab-panel hidden space-y-5 no-print">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-800">دفتر کل گردش حساب و مانده تنخواه (مشابه فایل تنخواه1.xlsx - شیت ۱۴۰۵)</h3>
+          <p class="text-xs text-slate-500 mt-0.5">محاسبه خودکار مانده لحظه‌ای پس از هر بار شارژ تنخواه یا تحویل صورت‌خلاصه رسمی و غیررسمی</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="addDepositModalBtn" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition">
+            + ثبت شارژ جدید تنخواه (واریزی شرکت)
+          </button>
+          <button id="exportLedgerCsvBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-xl transition">
+            دانلود اکسل دفتر کل (تنخواه۱)
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-right text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4 font-bold">ردیف</th>
+                <th class="py-3 px-4 font-bold">شرح گردش (واریز / شماره تنخواه)</th>
+                <th class="py-3 px-4 font-bold text-emerald-700">واریز (شارژ تنخواه)</th>
+                <th class="py-3 px-4 font-bold text-rose-700">قیمت / مبلغ هزینه</th>
+                <th class="py-3 px-4 font-bold">مانده حساب</th>
+                <th class="py-3 px-4 font-bold">تاریخ</th>
+                <th class="py-3 px-4 font-bold">شماره پیگیری / اسکن</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  
+    <!-- TAB 6: MOBILE INSTALL & AUTOMATIC SMS RADAR -->
+    <section id="tab-mobile" class="tab-panel hidden space-y-6 no-print">
+      <!-- Top Banner: Live Auto-Radar Status -->
+      <div class="blu-card text-white rounded-2xl p-6 shadow-lg border border-blue-400/20">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-base sm:text-lg font-extrabold">رادار دریافت خودکار پیامک بلوبانک روی گوشی (بدون ایمپورت دستی)</h2>
+                <span id="autoRadarStatusBadge" class="text-xs bg-emerald-500 text-white px-2.5 py-0.5 rounded-full font-bold">فعال و آماده دریافت</span>
+              </div>
+              <p class="text-xs text-blue-100 mt-1.5 leading-relaxed max-w-3xl">
+                با فعال بودن این بخش، هر زمان پیامک بلوبانک به گوشی شما برسد، به صورت کاملاً خودکار (از طریق پل ارتباطی MacroDroid / Shortcuts یا تشخیص خودکار حافظه گوشی به محض باز کردن اپ) خوانده شده، نوع هزینه (رسمی / غیررسمی کارگر / مرجوعی آکوپ / واریز شارژ) تشخیص داده می‌شود و مستقیم در تنخواه ثبت می‌گردد.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="simulateIncomingSmsBtn" type="button" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-1.5">
+              <span>⚡ تست شبیه‌سازی دریافت خودکار پیامک الان</span>
+            </button>
+            <button id="toggleAutoCommitBtn" type="button" class="bg-white/15 hover:bg-white/25 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl border border-white/20 transition">
+              حالت ثبت: <span id="autoCommitModeLabel" class="underline text-emerald-300">ثبت آنی بدون سوال</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Methods to Install & Automate on Phone -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Step 1: Install App Icon on Home Screen -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="bg-blue-50 text-blue-700 text-xs font-extrabold px-3 py-1 rounded-lg">گام ۱: نصب آیکون برنامه روی گوشی</span>
+              <span class="text-xs text-slate-400 font-bold">اندروید و آیفون</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-slate-800">نصب به عنوان اپلیکیشن موبایل (PWA / WebAPK)</h3>
+            <ul class="mt-3 space-y-2 text-xs text-slate-600 leading-relaxed">
+              <li>۱. فایل برنامه را روی گوشی در مرورگر <strong>Chrome</strong> (اندروید) یا <strong>Safari</strong> (آیفون) باز کنید.</li>
+              <li>۲. از منوی سه نقطه بالا گزینه <strong>«Add to Home Screen» (افزودن به صفحه اصلی / Install App)</strong> را بزنید.</li>
+              <li>۳. آیکون اختصاصی <strong>«تنخواه بلوبانک»</strong> به صفحه اصلی گوشی شما اضافه می‌شود و تمام‌صفحه و کاملاً آفلاین کار می‌کند.</li>
+            </ul>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100">
+            <button id="installPwaPromptBtn" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition">
+              📲 افزودن به صفحه اصلی گوشی (Install)
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: MacroDroid Zero-Click SMS Bridge (Android) -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border-2 border-emerald-500/70 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="bg-emerald-50 text-emerald-700 text-xs font-extrabold px-3 py-1 rounded-lg">گام ۲: اتصال خودکار پیامک (پیشنهادی اندروید)</span>
+              <span class="text-xs text-emerald-600 font-bold">۱۰۰٪ خودکار</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-slate-800">خوانش خودکار پیامک بلوبانک در پس‌زمینه</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+              چون سیستم‌عامل اندروید فقط به اپ‌های دارای دسترسی پیامک اجازه خواندن SMS در پس‌زمینه را می‌دهد، یک فایل آماده <strong>MacroDroid</strong> برایتان ساخته‌ام:
+            </p>
+            <ul class="mt-2.5 space-y-1.5 text-xs text-slate-600 leading-relaxed">
+              <li>• هر زمان پیامکی حاوی کلمه <strong>«بلو»</strong> یا از سرشماره بلوبانک برسد، بدون اینکه دست به گوشی بزنید، متن پیامک را مستقیم به آدرس برنامه می‌فرستد:</li>
+              <li class="dir-ltr bg-slate-100 p-2 rounded-lg font-mono text-[11px] text-slate-700 select-all">?autosms={sms_body}</li>
+            </ul>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-2">
+            <button id="downloadMacroConfigBtn" type="button" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-xl shadow transition">
+              📥 دانلود فایل آماده MacroDroid (ایمپورت ۱ کلیکه)
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Auto-Clipboard Radar & Native APK Code -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="bg-purple-50 text-purple-700 text-xs font-extrabold px-3 py-1 rounded-lg">گام ۳: رادار هوشمند کلیپ‌بورد + APK</span>
+              <span class="text-xs text-slate-400 font-bold">بدون نیاز به تایپ</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-slate-800">تشخیص خودکار به محض باز کردن برنامه</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+              حتی اگر MacroDroid نصب نکنید، <strong>رادار کلیپ‌بورد</strong> داخل برنامه فعال است:
+            </p>
+            <ul class="mt-2.5 space-y-1.5 text-xs text-slate-600 leading-relaxed">
+              <li>• کافیست روی نوتیفیکیشن پیامک بلوبانک دکمه «Copy» را بزنید؛ به محض اینکه وارد برنامه شوید، برنامه <strong>خودکار بدون نیاز به Paste یا کلیک</strong> پیامک را تشخیص داده و ثبت می‌کند.</li>
+              <li>• همچنین سورس کامل <strong>اپلیکیشن اندروید (SmsReceiver.kt)</strong> در فایل زیپ پیوست شده است.</li>
+            </ul>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100">
+            <button id="checkClipboardNowBtn" type="button" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-2.5 rounded-xl transition">
+              🔍 اسکن خودکار حافظه گوشی همین الان
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Auto-Detected SMS Log -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-800">گزارش پیامک‌های دریافت‌شده به صورت خودکار (Auto-Sync Log)</h3>
+            <p class="text-xs text-slate-500">لیست تراکنش‌هایی که بدون تایپ دستی و به صورت خودکار توسط رادار بلوبانک ثبت شده‌اند</p>
+          </div>
+          <span id="autoSyncLogCount" class="text-xs bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full">آماده دریافت</span>
+        </div>
+        <div id="autoSyncLogList" class="mt-3 space-y-2 text-xs text-slate-600">
+          <div class="text-center py-6 text-slate-400">
+            برای مشاهده عملکرد خودکار، دکمه سبز «⚡ تست شبیه‌سازی دریافت خودکار پیامک الان» در بالای همین صفحه را بزنید.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: QUICK ADD EXPENSE OR DEPOSIT -->
+  <div id="quickAddModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-extrabold text-slate-800">ثبت دستی هزینه انبار یا واریزی شارژ تنخواه</h3>
+        <button id="closeQuickAddBtn" type="button" class="text-slate-400 hover:text-slate-700 text-lg font-bold px-2">✕</button>
+      </div>
+
+      <form id="quickAddForm" class="space-y-4 mt-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">نوع رکورد:</label>
+            <select id="modalRecordKind" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold bg-white">
+              <option value="expense">ثبت هزینه در لیست تنخواه</option>
+              <option value="deposit">واریز شارژ تنخواه (حساب بلوبانک)</option>
+            </select>
+          </div>
+          <div id="modalCompanyWrap">
+            <label class="block text-xs font-bold text-slate-600 mb-1">شرکت:</label>
+            <select id="modalCompany" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold bg-white">
+              <option value="rojin">آرایشی بهداشتی روژین</option>
+              <option value="akop">طلوع سلامت ژیک (آکوپ)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="modalExpenseFields" class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">نوع تنخواه:</label>
+            <select id="modalExpType" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold bg-white">
+              <option value="official">رسمی</option>
+              <option value="unofficial">غیررسمی (کارگر)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">شماره تنخواه:</label>
+            <input id="modalTankhahNo" type="number" value="15" min="1" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">شماره فاکتور/بارنامه:</label>
+            <input id="modalInvoiceNo" type="text" placeholder="اختیاری" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">روز:</label>
+            <input id="modalDay" type="number" value="2" min="1" max="31" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold" required />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">ماه:</label>
+            <input id="modalMonth" type="number" value="8" min="1" max="12" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold" required />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">سال:</label>
+            <input id="modalYear" type="number" value="1405" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">شرح هزینه / واریز:</label>
+          <input id="modalDesc" type="text" placeholder="مثلاً: کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129301" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" required />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">مبلغ ناخالص (به ریال):</label>
+          <input id="modalAmount" type="number" placeholder="مثلاً 340000000" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-extrabold text-blue-700" required />
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <button id="cancelQuickAddBtn" type="button" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">انصراف</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow">ذخیره و بروزرسانی مانده</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. INITIAL REAL DATA FROM USER'S 1405 EXCEL FILES
+    // ==========================================
+    const INITIAL_LEDGER_1405 = [
+      { id: 1, title: "اول دوره", deposit: 286127804, cost: 0, date: "1405/01/01", ref: "" },
+      { id: 2, title: "واریز", deposit: 500000000, cost: 0, date: "1405/01/17", ref: "شارژ بلوبانک" },
+      { id: 3, title: "تنخواه شماره رسمی1", deposit: 0, cost: 579254300, date: "1405/02/07", ref: "رسمی 01" },
+      { id: 4, title: "تنخواه شماره غیر رسمی 1", deposit: 0, cost: 56000000, date: "1405/02/07", ref: "غیررسمی 01" },
+      { id: 5, title: "واریز", deposit: 500000000, cost: 0, date: "1405/02/06", ref: "شارژ بلوبانک" },
+      { id: 6, title: "تنخواه شماره رسمی2", deposit: 0, cost: 298470000, date: "1405/02/14", ref: "رسمی 02" },
+      { id: 7, title: "تنخواه شماره غیر رسمی 2", deposit: 0, cost: 36000000, date: "1405/02/14", ref: "غیررسمی 02" },
+      { id: 8, title: "تنخواه شماره رسمی3", deposit: 0, cost: 225750000, date: "1405/02/15", ref: "رسمی 03" },
+      { id: 9, title: "تنخواه شماره غیر رسمی 3", deposit: 0, cost: 99000000, date: "1405/02/15", ref: "غیررسمی 03" },
+      { id: 10, title: "تنخواه شماره رسمی4", deposit: 0, cost: 747394000, date: "1405/02/26", ref: "رسمی 04" },
+      { id: 11, title: "تنخواه شماره غیر رسمی 4", deposit: 0, cost: 204000000, date: "1405/02/26", ref: "غیررسمی 04" },
+      { id: 12, title: "واریز", deposit: 500000000, cost: 0, date: "1405/02/16", ref: "شارژ بلوبانک" },
+      { id: 13, title: "واریز", deposit: 500000000, cost: 0, date: "1405/02/23", ref: "شارژ بلوبانک" },
+      { id: 14, title: "تنخواه شماره رسمی5", deposit: 0, cost: 843997500, date: "1405/03/10", ref: "رسمی 05" },
+      { id: 15, title: "تنخواه شماره غیر رسمی 5", deposit: 0, cost: 228000000, date: "1405/03/10", ref: "غیررسمی 05" },
+      { id: 16, title: "واریز", deposit: 500000000, cost: 0, date: "1405/02/28", ref: "شارژ بلوبانک" },
+      { id: 17, title: "واریز", deposit: 700000000, cost: 0, date: "1405/02/30", ref: "شارژ بلوبانک" },
+      { id: 18, title: "تنخواه شماره رسمی6", deposit: 0, cost: 1119860000, date: "1405/03/25", ref: "رسمی 06" },
+      { id: 19, title: "تنخواه شماره غیر رسمی 6", deposit: 0, cost: 180000000, date: "1405/03/25", ref: "غیررسمی 06" },
+      { id: 20, title: "واریز", deposit: 700000000, cost: 0, date: "1405/03/10", ref: "شارژ بلوبانک" },
+      { id: 21, title: "واریز", deposit: 700000000, cost: 0, date: "1405/03/18", ref: "شارژ بلوبانک" },
+      { id: 22, title: "تنخواه شماره رسمی7", deposit: 0, cost: 1115109600, date: "1405/04/06", ref: "رسمی 07" },
+      { id: 23, title: "تنخواه شماره غیر رسمی 7", deposit: 0, cost: 108000000, date: "1405/04/06", ref: "غیررسمی 07" },
+      { id: 24, title: "واریز", deposit: 700000000, cost: 0, date: "1405/03/26", ref: "شارژ بلوبانک" },
+      { id: 25, title: "واریز", deposit: 700000000, cost: 0, date: "1405/03/31", ref: "شارژ بلوبانک" },
+      { id: 26, title: "تنخواه شماره رسمی8", deposit: 0, cost: 576735420, date: "1405/04/21", ref: "رسمی 08" },
+      { id: 27, title: "تنخواه شماره غیر رسمی 8", deposit: 0, cost: 108000000, date: "1405/04/21", ref: "غیررسمی 08" },
+      { id: 28, title: "واریز", deposit: 700000000, cost: 0, date: "1405/04/08", ref: "شارژ بلوبانک" },
+      { id: 29, title: "تنخواه شماره رسمی9", deposit: 0, cost: 1301789000, date: "1405/05/03", ref: "رسمی 09" },
+      { id: 30, title: "تنخواه شماره غیر رسمی 9", deposit: 0, cost: 144300000, date: "1405/05/03", ref: "غیررسمی 09" },
+      { id: 31, title: "واریز", deposit: 700000000, cost: 0, date: "1405/04/22", ref: "شارژ بلوبانک" },
+      { id: 32, title: "واریز", deposit: 700000000, cost: 0, date: "1405/04/28", ref: "شارژ بلوبانک" },
+      { id: 33, title: "تنخواه شماره رسمی10", deposit: 0, cost: 1225556800, date: "1405/05/17", ref: "رسمی 10" },
+      { id: 34, title: "تنخواه شماره غیر رسمی 10", deposit: 0, cost: 132000000, date: "1405/05/17", ref: "غیررسمی 10" },
+      { id: 35, title: "واریز", deposit: 700000000, cost: 0, date: "1405/05/04", ref: "شارژ بلوبانک" },
+      { id: 36, title: "واریز", deposit: 700000000, cost: 0, date: "1405/05/12", ref: "شارژ بلوبانک" },
+      { id: 37, title: "تنخواه شماره رسمی11", deposit: 0, cost: 1243095400, date: "1405/06/02", ref: "رسمی 11" },
+      { id: 38, title: "تنخواه شماره غیر رسمی 11", deposit: 0, cost: 108170000, date: "1405/06/02", ref: "غیررسمی 11" },
+      { id: 39, title: "واریز", deposit: 700000000, cost: 0, date: "1405/05/19", ref: "شارژ بلوبانک" },
+      { id: 40, title: "واریز", deposit: 700000000, cost: 0, date: "1405/05/25", ref: "شارژ بلوبانک" },
+      { id: 41, title: "تنخواه شماره رسمی12", deposit: 0, cost: 914026000, date: "1405/06/17", ref: "رسمی 12" },
+      { id: 42, title: "تنخواه شماره غیر رسمی 12", deposit: 0, cost: 119700000, date: "1405/06/17", ref: "غیررسمی 12" },
+      { id: 43, title: "واریز", deposit: 700000000, cost: 0, date: "1405/06/04", ref: "شارژ بلوبانک" },
+      { id: 44, title: "کسر / تراکنش 95791643", deposit: 0, cost: 21000000, date: "1405/06/17", ref: "95791643" },
+      { id: 45, title: "تنخواه شماره رسمی13", deposit: 0, cost: 1641943800, date: "1405/07/07", ref: "رسمی 13" },
+      { id: 46, title: "تنخواه شماره غیر رسمی 13", deposit: 0, cost: 288000000, date: "1405/07/07", ref: "غیررسمی 13" },
+      { id: 47, title: "واریز", deposit: 700000000, cost: 0, date: "1405/06/21", ref: "شارژ بلوبانک" },
+      { id: 48, title: "واریز", deposit: 700000000, cost: 0, date: "1405/06/29", ref: "شارژ بلوبانک" },
+      { id: 49, title: "واریز", deposit: 700000000, cost: 0, date: "1405/07/01", ref: "شارژ بلوبانک" },
+      { id: 50, title: "تنخواه شماره رسمی14", deposit: 0, cost: 2069926000, date: "1405/07/28", ref: "رسمی 14" },
+      { id: 51, title: "تنخواه شماره غیر رسمی 14", deposit: 0, cost: 216000000, date: "1405/07/28", ref: "غیررسمی 14" },
+      { id: 52, title: "واریز", deposit: 700000000, cost: 0, date: "1405/07/07", ref: "شارژ بلوبانک" },
+      { id: 53, title: "واریز", deposit: 700000000, cost: 0, date: "1405/07/13", ref: "شارژ بلوبانک" },
+      { id: 54, title: "واریز", deposit: 700000000, cost: 0, date: "1405/07/21", ref: "شارژ بلوبانک" },
+      { id: 55, title: "واریز", deposit: 700000000, cost: 0, date: "1405/07/26", ref: "شارژ بلوبانک" }
+    ];
+
+    // Detailed items from تنخواه انبار 1405.xlsx & تنخواه انبار آکوپ 1405.xlsx
+    const INITIAL_EXPENSES = [
+      // Akop (طلوع سلامت ژیک) 1 to 6
+      { id: 1001, company: "akop", type: "official", no: 1, day: 29, month: 1, prepDate: "1405/02/07", invoice: "", desc: "هزینه بابت دریافت مرجوعی پخش لبخند سپید سلامت تبریز", amount: 13000000 },
+      { id: 1002, company: "akop", type: "official", no: 1, day: 29, month: 1, prepDate: "1405/02/07", invoice: "", desc: "هزینه بابت دریافت مرجوعی پخش کیا طب آفرین قزوین", amount: 19000000 },
+      { id: 1003, company: "akop", type: "official", no: 2, day: 13, month: 2, prepDate: "1405/03/25", invoice: "", desc: "هزینه بابت دریافت مرجوعی پخش معین سلطانی نژاد کرمان", amount: 3000000 },
+      { id: 1004, company: "akop", type: "official", no: 2, day: 24, month: 3, prepDate: "1405/03/25", invoice: "", desc: "هزینه بابت دریافت مرجوعی نجم فداییان شعبه رشت", amount: 10000000 },
+      { id: 1005, company: "akop", type: "official", no: 3, day: 27, month: 3, prepDate: "1405/04/06", invoice: "", desc: "هزینه بابت دریافت مرجوعی پخش رحیمی", amount: 11500000 },
+      { id: 1006, company: "akop", type: "official", no: 4, day: 7, month: 5, prepDate: "1405/06/02", invoice: "", desc: "هزینه بابت دریافت مرجوعی پخش بهاران تجارت پاژ مشهد", amount: 12000000 },
+      { id: 1007, company: "akop", type: "official", no: 4, day: 1, month: 6, prepDate: "1405/06/02", invoice: "", desc: "هزینه بابت دریافت مرجوعی پخش معین سلطانی نژاد کرمان", amount: 4000000 },
+      { id: 1008, company: "akop", type: "official", no: 5, day: 7, month: 6, prepDate: "1405/07/07", invoice: "", desc: "هزینه بابت دریافت مرجوعی از گیل مهر رشت", amount: 5000000 },
+      { id: 1009, company: "akop", type: "official", no: 6, day: 25, month: 7, prepDate: "1405/07/28", invoice: "", desc: "هزینه بابت دریافت مرجوعی از مجید پخش سپاهان", amount: 31500000 },
+      { id: 1010, company: "akop", type: "official", no: 6, day: 25, month: 7, prepDate: "1405/07/28", invoice: "", desc: "هزینه بابت دریافت مرجوعی از آران تجارت شیراز", amount: 23000000 },
+
+      // Rojin Tankhah 14 (Official - 1405/07/28) - Total: 2,069,926,000
+      { id: 2001, company: "rojin", type: "official", no: 14, day: 28, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 692000 },
+      { id: 2002, company: "rojin", type: "official", no: 14, day: 27, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 700000 },
+      { id: 2003, company: "rojin", type: "official", no: 14, day: 21, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 505000 },
+      { id: 2004, company: "rojin", type: "official", no: 14, day: 21, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 580000 },
+      { id: 2005, company: "rojin", type: "official", no: 14, day: 21, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 900000 },
+      { id: 2006, company: "rojin", type: "official", no: 14, day: 19, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 690000 },
+      { id: 2007, company: "rojin", type: "official", no: 14, day: 18, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 1050000 },
+      { id: 2008, company: "rojin", type: "official", no: 14, day: 14, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 380000 },
+      { id: 2009, company: "rojin", type: "official", no: 14, day: 13, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 600000 },
+      { id: 2010, company: "rojin", type: "official", no: 14, day: 13, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 1050000 },
+      { id: 2011, company: "rojin", type: "official", no: 14, day: 11, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 550000 },
+      { id: 2012, company: "rojin", type: "official", no: 14, day: 8, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 345000 },
+      { id: 2013, company: "rojin", type: "official", no: 14, day: 7, month: 7, prepDate: "1405/07/28", invoice: "", desc: "سوخت خودرو", amount: 520000 },
+      { id: 2014, company: "rojin", type: "official", no: 14, day: 28, month: 7, prepDate: "1405/07/28", invoice: "", desc: "تعویض روغن پراید وانت", amount: 28400000 },
+      { id: 2015, company: "rojin", type: "official", no: 14, day: 27, month: 7, prepDate: "1405/07/28", invoice: "8129293", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129293", amount: 340000000 },
+      { id: 2016, company: "rojin", type: "official", no: 14, day: 26, month: 7, prepDate: "1405/07/28", invoice: "", desc: "فیلم استرج پالت (سلفون)", amount: 80000000 },
+      { id: 2017, company: "rojin", type: "official", no: 14, day: 25, month: 7, prepDate: "1405/07/28", invoice: "", desc: "هزینه بابت دریافت مواد اولیه اسکوربیک اسید", amount: 8000000 },
+      { id: 2018, company: "rojin", type: "official", no: 14, day: 22, month: 7, prepDate: "1405/07/28", invoice: "", desc: "شارژ اینترنت انبار (تمدید آی پی ثابت)", amount: 23760000 },
+      { id: 2019, company: "rojin", type: "official", no: 14, day: 21, month: 7, prepDate: "1405/07/28", invoice: "8129253", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129253", amount: 340000000 },
+      { id: 2020, company: "rojin", type: "official", no: 14, day: 20, month: 7, prepDate: "1405/07/28", invoice: "8129243", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129243", amount: 222000000 },
+      { id: 2021, company: "rojin", type: "official", no: 14, day: 20, month: 7, prepDate: "1405/07/28", invoice: "", desc: "هزینه بابت دریافت مواد اولیه آویسل", amount: 2800000 },
+      { id: 2022, company: "rojin", type: "official", no: 14, day: 20, month: 7, prepDate: "1405/07/28", invoice: "8129233", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129233", amount: 340000000 },
+      { id: 2023, company: "rojin", type: "official", no: 14, day: 14, month: 7, prepDate: "1405/07/28", invoice: "", desc: "شارژ اینترنت انبار", amount: 8129000 },
+      { id: 2024, company: "rojin", type: "official", no: 14, day: 13, month: 7, prepDate: "1405/07/28", invoice: "8129194", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129194", amount: 280000000 },
+      { id: 2025, company: "rojin", type: "official", no: 14, day: 12, month: 7, prepDate: "1405/07/28", invoice: "", desc: "کاغذ A4", amount: 58275000 },
+      { id: 2026, company: "rojin", type: "official", no: 14, day: 11, month: 7, prepDate: "1405/07/28", invoice: "8129161", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129161", amount: 280000000 },
+      { id: 2027, company: "rojin", type: "official", no: 14, day: 8, month: 7, prepDate: "1405/07/28", invoice: "", desc: "شارژ کاتریج پرینتر و خرید کاتریج", amount: 35000000 },
+      { id: 2028, company: "rojin", type: "official", no: 14, day: 7, month: 7, prepDate: "1405/07/28", invoice: "", desc: "هزینه بابت دریافت مواد اولیه سی ام سی شاندونگ", amount: 15000000 },
+
+      // Rojin Tankhah 14 (Unofficial - 1405/07/28) - Total: 216,000,000
+      { id: 2101, company: "rojin", type: "unofficial", no: 14, day: 27, month: 7, prepDate: "1405/07/28", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2102, company: "rojin", type: "unofficial", no: 14, day: 22, month: 7, prepDate: "1405/07/28", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2103, company: "rojin", type: "unofficial", no: 14, day: 21, month: 7, prepDate: "1405/07/28", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2104, company: "rojin", type: "unofficial", no: 14, day: 19, month: 7, prepDate: "1405/07/28", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2105, company: "rojin", type: "unofficial", no: 14, day: 13, month: 7, prepDate: "1405/07/28", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2106, company: "rojin", type: "unofficial", no: 14, day: 11, month: 7, prepDate: "1405/07/28", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+
+      // Rojin Tankhah 13 (Official - 1405/07/07) - Total: 1,641,943,800
+      { id: 2201, company: "rojin", type: "official", no: 13, day: 5, month: 7, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 600000 },
+      { id: 2202, company: "rojin", type: "official", no: 13, day: 1, month: 7, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 405800 },
+      { id: 2203, company: "rojin", type: "official", no: 13, day: 1, month: 7, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 520000 },
+      { id: 2204, company: "rojin", type: "official", no: 13, day: 29, month: 6, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 1200000 },
+      { id: 2205, company: "rojin", type: "official", no: 13, day: 28, month: 6, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 2600000 },
+      { id: 2206, company: "rojin", type: "official", no: 13, day: 28, month: 6, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 1200000 },
+      { id: 2207, company: "rojin", type: "official", no: 13, day: 25, month: 6, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 90000 },
+      { id: 2208, company: "rojin", type: "official", no: 13, day: 24, month: 6, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 300000 },
+      { id: 2209, company: "rojin", type: "official", no: 13, day: 22, month: 6, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 1100000 },
+      { id: 2210, company: "rojin", type: "official", no: 13, day: 21, month: 6, prepDate: "1405/07/07", invoice: "", desc: "سوخت خودرو", amount: 1400000 },
+      { id: 2211, company: "rojin", type: "official", no: 13, day: 6, month: 7, prepDate: "1405/07/07", invoice: "", desc: "لوله سینک ظرفشویی", amount: 2500000 },
+      { id: 2212, company: "rojin", type: "official", no: 13, day: 5, month: 7, prepDate: "1405/07/07", invoice: "", desc: "قند", amount: 15980000 },
+      { id: 2213, company: "rojin", type: "official", no: 13, day: 6, month: 7, prepDate: "1405/07/07", invoice: "8129140", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129140", amount: 280000000 },
+      { id: 2214, company: "rojin", type: "official", no: 13, day: 2, month: 7, prepDate: "1405/07/07", invoice: "8129131", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129131", amount: 280000000 },
+      { id: 2215, company: "rojin", type: "official", no: 13, day: 31, month: 6, prepDate: "1405/07/07", invoice: "", desc: "هزینه بابت دریافت مواد اولیه", amount: 114000000 },
+      { id: 2216, company: "rojin", type: "official", no: 13, day: 31, month: 6, prepDate: "1405/07/07", invoice: "8129044", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129044", amount: 280000000 },
+      { id: 2217, company: "rojin", type: "official", no: 13, day: 30, month: 6, prepDate: "1405/07/07", invoice: "8129095", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129095", amount: 190000000 },
+      { id: 2218, company: "rojin", type: "official", no: 13, day: 29, month: 6, prepDate: "1405/07/07", invoice: "", desc: "خرید لاستیک", amount: 105000000 },
+      { id: 2219, company: "rojin", type: "official", no: 13, day: 28, month: 6, prepDate: "1405/07/07", invoice: "", desc: "تعویض لاستیک", amount: 1000000 },
+      { id: 2220, company: "rojin", type: "official", no: 13, day: 25, month: 6, prepDate: "1405/07/07", invoice: "", desc: "هزینه بابت دریافت مواد اولیه", amount: 3000000 },
+      { id: 2221, company: "rojin", type: "official", no: 13, day: 25, month: 6, prepDate: "1405/07/07", invoice: "", desc: "هزینه بابت دریافت مواد اولیه", amount: 9000000 },
+      { id: 2222, company: "rojin", type: "official", no: 13, day: 25, month: 6, prepDate: "1405/07/07", invoice: "", desc: "هزینه بابت دریافت مواد اولیه", amount: 6000000 },
+      { id: 2223, company: "rojin", type: "official", no: 13, day: 22, month: 6, prepDate: "1405/07/07", invoice: "", desc: "خرید دامنه", amount: 15268000 },
+      { id: 2224, company: "rojin", type: "official", no: 13, day: 21, month: 6, prepDate: "1405/07/07", invoice: "", desc: "خرید ماژیک هایلایت و چسب", amount: 16220000 },
+      { id: 2225, company: "rojin", type: "official", no: 13, day: 21, month: 6, prepDate: "1405/07/07", invoice: "", desc: "چسب پهن", amount: 34560000 },
+      { id: 2226, company: "rojin", type: "official", no: 13, day: 22, month: 6, prepDate: "1405/07/07", invoice: "8129004", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129004", amount: 280000000 },
+
+      // Rojin Tankhah 13 (Unofficial - 1405/07/07) - Total: 288,000,000
+      { id: 2301, company: "rojin", type: "unofficial", no: 13, day: 6, month: 7, prepDate: "1405/07/07", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2302, company: "rojin", type: "unofficial", no: 13, day: 2, month: 7, prepDate: "1405/07/07", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2303, company: "rojin", type: "unofficial", no: 13, day: 31, month: 6, prepDate: "1405/07/07", invoice: "", desc: "کارگر روزمزد انبار", amount: 72000000 },
+      { id: 2304, company: "rojin", type: "unofficial", no: 13, day: 30, month: 6, prepDate: "1405/07/07", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2305, company: "rojin", type: "unofficial", no: 13, day: 29, month: 6, prepDate: "1405/07/07", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2306, company: "rojin", type: "unofficial", no: 13, day: 22, month: 6, prepDate: "1405/07/07", invoice: "", desc: "کارگر روزمزد انبار", amount: 72000000 },
+
+      // Rojin Tankhah 12 (Official - 1405/06/17) - Total: 914,026,000
+      { id: 2401, company: "rojin", type: "official", no: 12, day: 14, month: 6, prepDate: "1405/06/17", invoice: "", desc: "سوخت خودرو (۱۱ نوبت از ۶/۱ تا ۶/۱۴)", amount: 6826000 },
+      { id: 2402, company: "rojin", type: "official", no: 12, day: 15, month: 6, prepDate: "1405/06/17", invoice: "", desc: "هزینه بابت دریافت مواد اولیه", amount: 10500000 },
+      { id: 2403, company: "rojin", type: "official", no: 12, day: 12, month: 6, prepDate: "1405/06/17", invoice: "", desc: "پیچ و مهره جهت تعمیر نوار نقاله", amount: 1100000 },
+      { id: 2404, company: "rojin", type: "official", no: 12, day: 14, month: 6, prepDate: "1405/06/17", invoice: "", desc: "هزینه بابت دریافت مواد اولیه", amount: 2000000 },
+      { id: 2405, company: "rojin", type: "official", no: 12, day: 12, month: 6, prepDate: "1405/06/17", invoice: "813953", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 813953", amount: 190000000 },
+      { id: 2406, company: "rojin", type: "official", no: 12, day: 10, month: 6, prepDate: "1405/06/17", invoice: "", desc: "هزینه بابت دریافت مواد اولیه", amount: 13000000 },
+      { id: 2407, company: "rojin", type: "official", no: 12, day: 9, month: 6, prepDate: "1405/06/17", invoice: "813910", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 813910", amount: 280000000 },
+      { id: 2408, company: "rojin", type: "official", no: 12, day: 4, month: 6, prepDate: "1405/06/17", invoice: "813872", desc: "کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 813872", amount: 280000000 },
+      { id: 2409, company: "rojin", type: "official", no: 12, day: 4, month: 6, prepDate: "1405/06/17", invoice: "", desc: "تمدید آی پی ثابت اینترنت انبار", amount: 19800000 },
+      { id: 2410, company: "rojin", type: "official", no: 12, day: 3, month: 6, prepDate: "1405/06/17", invoice: "", desc: "خرید 2 حلقه لاستیک", amount: 92000000 },
+      { id: 2411, company: "rojin", type: "official", no: 12, day: 3, month: 6, prepDate: "1405/06/17", invoice: "", desc: "خرید میخ جهت پرچ درب نیسان", amount: 800000 },
+      { id: 2412, company: "rojin", type: "official", no: 12, day: 3, month: 6, prepDate: "1405/06/17", invoice: "", desc: "خرید باطری پراید وانت", amount: 18000000 },
+
+      // Rojin Tankhah 12 (Unofficial - 1405/06/17) - Total: 119,700,000
+      { id: 2501, company: "rojin", type: "unofficial", no: 12, day: 12, month: 6, prepDate: "1405/06/17", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2502, company: "rojin", type: "unofficial", no: 12, day: 10, month: 6, prepDate: "1405/06/17", invoice: "", desc: "کارگر روزمزد انبار", amount: 11700000 },
+      { id: 2503, company: "rojin", type: "unofficial", no: 12, day: 9, month: 6, prepDate: "1405/06/17", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 },
+      { id: 2504, company: "rojin", type: "unofficial", no: 12, day: 4, month: 6, prepDate: "1405/06/17", invoice: "", desc: "کارگر روزمزد انبار", amount: 36000000 }
+    ];
+
+    // Summary of all 14 periods of 1405 from تنخواه1.xlsx for Charts
+    const PERIOD_SUMMARY_1405 = [
+      { no: 1, date: "1405/02/07", official: 579254300, unofficial: 56000000 },
+      { no: 2, date: "1405/02/14", official: 298470000, unofficial: 36000000 },
+      { no: 3, date: "1405/02/15", official: 225750000, unofficial: 99000000 },
+      { no: 4, date: "1405/02/26", official: 747394000, unofficial: 204000000 },
+      { no: 5, date: "1405/03/10", official: 843997500, unofficial: 228000000 },
+      { no: 6, date: "1405/03/25", official: 1119860000, unofficial: 180000000 },
+      { no: 7, date: "1405/04/06", official: 1115109600, unofficial: 108000000 },
+      { no: 8, date: "1405/04/21", official: 576735420, unofficial: 108000000 },
+      { no: 9, date: "1405/05/03", official: 1301789000, unofficial: 144300000 },
+      { no: 10, date: "1405/05/17", official: 1225556800, unofficial: 132000000 },
+      { no: 11, date: "1405/06/02", official: 1243095400, unofficial: 108170000 },
+      { no: 12, date: "1405/06/17", official: 914026000, unofficial: 119700000 },
+      { no: 13, date: "1405/07/07", official: 1641943800, unofficial: 288000000 },
+      { no: 14, date: "1405/07/28", official: 2069926000, unofficial: 216000000 }
+    ];
+
+    // ==========================================
+    // 2. APPLICATION STATE & STORAGE
+    // ==========================================
+    let state = {
+      currency: "rial", // 'rial' or 'toman'
+      ledger: [...INITIAL_LEDGER_1405],
+      expenses: [...INITIAL_EXPENSES],
+      parsedQueue: []
+    };
+
+    try {
+      const saved = localStorage.getItem("mojtaba_tankhah_state_v1");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.ledger && parsed.expenses) {
+          state.ledger = parsed.ledger;
+          state.expenses = parsed.expenses;
+        }
+      }
+    } catch (e) {}
+
+    function saveState() {
+      try {
+        localStorage.setItem("mojtaba_tankhah_state_v1", JSON.stringify({
+          ledger: state.ledger,
+          expenses: state.expenses
+        }));
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // 3. SMART CATEGORY & HELPER FUNCTIONS
+    // ==========================================
+    function detectCategory(desc) {
+      const d = (desc || "").trim();
+      if (d.includes("بارنامه") || d.includes("تبریز")) return "باربری تبریز-تهران";
+      if (d.includes("کارگر") || d.includes("ایاب و ذهاب") || d.includes("تخلیه")) return "کارگر روزمزد";
+      if (d.includes("سوخت") || d.includes("بنزین")) return "سوخت خودرو";
+      if (d.includes("مرجوعی") || d.includes("پخش")) return "مرجوعی و پخش (آکوپ/سایر)";
+      if (d.includes("روغن") || d.includes("لاستیک") || d.includes("پراید") || d.includes("نیسان") || d.includes("پیکان") || d.includes("تعمیر") || d.includes("باطری") || d.includes("بیمه") || d.includes("آپاراتی")) return "تعمیر و نگهداری خودرو";
+      if (d.includes("اینترنت") || d.includes("قبض") || d.includes("تلفن") || d.includes("برق") || d.includes("آب")) return "قبوض و اینترنت";
+      if (d.includes("مواد اولیه") || d.includes("ماده اولیه") || d.includes("اسید") || d.includes("سوربیتول")) return "مواد اولیه و باربری شهری";
+      return "ملزومات و مصرفی انبار";
+    }
+
+    function toPersianDigits(str) {
+      return String(str).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+    }
+
+    function toEnglishDigits(str) {
+      return String(str)
+        .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+        .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+    }
+
+    function formatMoney(amountRial, includeUnit = false) {
+      const val = state.currency === "toman" ? Math.round(amountRial / 10) : Math.round(amountRial);
+      const formatted = toPersianDigits(val.toLocaleString("en-US"));
+      if (!includeUnit) return formatted;
+      return `${formatted} ${state.currency === "toman" ? "تومان" : "ریال"}`;
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById("toastBox");
+      const txt = document.getElementById("toastText");
+      txt.textContent = msg;
+      box.classList.remove("hidden");
+      setTimeout(() => box.classList.add("hidden"), 3500);
+    }
+
+    // ==========================================
+    // 4. RENDER DASHBOARD & CHARTS
+    // ==========================================
+    let periodChartInstance = null;
+    let categoryChartInstance = null;
+
+    function computeTotals() {
+      let totalDeposits = 0;
+      let totalCosts = 0;
+      state.ledger.forEach(r => {
+        totalDeposits += Number(r.deposit || 0);
+        totalCosts += Number(r.cost || 0);
+      });
+      const currentBalance = totalDeposits - totalCosts;
+
+      const officialSum = state.ledger
+        .filter(r => r.title.includes("رسمی") && !r.title.includes("غیر"))
+        .reduce((a, b) => a + Number(b.cost || 0), 0);
+
+      const unofficialSum = state.ledger
+        .filter(r => r.title.includes("غیر رسمی") || r.title.includes("غیررسمی"))
+        .reduce((a, b) => a + Number(b.cost || 0), 0);
+
+      const akopSum = state.expenses
+        .filter(e => e.company === "akop")
+        .reduce((a, b) => a + Number(b.amount || 0), 0);
+
+      return { totalDeposits, totalCosts, currentBalance, officialSum, unofficialSum, akopSum };
+    }
+
+    function renderDashboard() {
+      const totals = computeTotals();
+      const unitLabel = state.currency === "toman" ? "تومان" : "ریال";
+
+      document.getElementById("headerBalance").textContent = formatMoney(totals.currentBalance, true);
+      document.getElementById("currencyUnitBadge").textContent = unitLabel;
+
+      document.getElementById("kpiBalance").textContent = formatMoney(totals.currentBalance, false);
+      const altVal = state.currency === "toman"
+        ? `${toPersianDigits(totals.currentBalance.toLocaleString("en-US"))} ریال`
+        : `${toPersianDigits(Math.round(totals.currentBalance / 10).toLocaleString("en-US"))} تومان`;
+      document.getElementById("kpiBalanceUnit").textContent = `${unitLabel} (معادل ${altVal})`;
+
+      document.getElementById("kpiTotalDeposits").textContent = formatMoney(totals.totalDeposits, false);
+      document.getElementById("kpiTotalOfficial").textContent = formatMoney(totals.officialSum, false);
+      document.getElementById("kpiTotalUnofficial").textContent = formatMoney(totals.unofficialSum, false);
+      document.getElementById("kpiAkopSub").textContent = formatMoney(totals.akopSum, true);
+
+      renderCharts();
+    }
+
+    function renderCharts() {
+      const divisor = state.currency === "toman" ? 10 : 1;
+      const unitLabel = state.currency === "toman" ? "تومان" : "ریال";
+
+      const ctx1 = document.getElementById("periodChart").getContext("2d");
+      if (periodChartInstance) periodChartInstance.destroy();
+
+      periodChartInstance = new Chart(ctx1, {
+        type: "bar",
+        data: {
+          labels: PERIOD_SUMMARY_1405.map(p => `تنخواه ${toPersianDigits(p.no)}`),
+          datasets: [
+            {
+              label: `تنخواه رسمی (${unitLabel})`,
+              data: PERIOD_SUMMARY_1405.map(p => Math.round(p.official / divisor)),
+              backgroundColor: "#2563eb",
+              borderRadius: 6
+            },
+            {
+              label: `تنخواه غیررسمی - کارگر (${unitLabel})`,
+              data: PERIOD_SUMMARY_1405.map(p => Math.round(p.unofficial / divisor)),
+              backgroundColor: "#f59e0b",
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { font: { family: "Vazirmatn" } } }
+          },
+          scales: {
+            x: { ticks: { font: { family: "Vazirmatn", size: 11 } } },
+            y: { ticks: { font: { family: "Vazirmatn", size: 10 } } }
+          }
+        }
+      });
+
+      // Category breakdown from detailed expenses
+      const catMap = {};
+      state.expenses.forEach(item => {
+        const c = detectCategory(item.desc);
+        catMap[c] = (catMap[c] || 0) + Number(item.amount || 0);
+      });
+      const catLabels = Object.keys(catMap);
+      const catValues = catLabels.map(k => Math.round(catMap[k] / divisor));
+
+      const ctx2 = document.getElementById("categoryChart").getContext("2d");
+      if (categoryChartInstance) categoryChartInstance.destroy();
+
+      categoryChartInstance = new Chart(ctx2, {
+        type: "doughnut",
+        data: {
+          labels: catLabels,
+          datasets: [{
+            data: catValues,
+            backgroundColor: [
+              "#1d4ed8", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4", "#64748b", "#ef4444"
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { font: { family: "Vazirmatn", size: 11 }, boxWidth: 12 }
+            }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // 5. RENDER EXPENSES TABLE & FILTERS
+    // ==========================================
+    function populatePeriodDropdowns() {
+      const numbers = Array.from(new Set(state.expenses.map(e => e.no))).sort((a, b) => b - a);
+      const filterSelect = document.getElementById("filterTankhahNo");
+      const currentVal = filterSelect.value;
+      filterSelect.innerHTML = `<option value="all">همه دوره‌ها</option>` +
+        numbers.map(n => `<option value="${n}">تنخواه شماره ${toPersianDigits(n)}</option>`).join("");
+      if (numbers.includes(Number(currentVal))) filterSelect.value = currentVal;
+    }
+
+    function getFilteredExpenses() {
+      const comp = document.getElementById("filterCompany").value;
+      const type = document.getElementById("filterType").value;
+      const no = document.getElementById("filterTankhahNo").value;
+      const cat = document.getElementById("filterCategory").value;
+      const q = document.getElementById("filterSearch").value.trim().toLowerCase();
+
+      return state.expenses.filter(item => {
+        if (comp !== "all" && item.company !== comp) return false;
+        if (type !== "all" && item.type !== type) return false;
+        if (no !== "all" && String(item.no) !== String(no)) return false;
+        const itemCat = detectCategory(item.desc);
+        if (cat !== "all" && itemCat !== cat) return false;
+        if (q && !item.desc.toLowerCase().includes(q) && !String(item.invoice || "").includes(q)) return false;
+        return true;
+      });
+    }
+
+    function renderExpensesTable() {
+      populatePeriodDropdowns();
+      const list = getFilteredExpenses();
+      const tbody = document.getElementById("expensesTableBody");
+
+      const sum = list.reduce((a, b) => a + Number(b.amount || 0), 0);
+      document.getElementById("filteredCount").textContent = toPersianDigits(list.length);
+      document.getElementById("filteredSum").textContent = formatMoney(sum, true);
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">هیچ ردیف هزینه‌ای با این فیلتر یافت نشد.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map((item, idx) => {
+        const compBadge = item.company === "akop"
+          ? `<span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-bold text-xs">آکوپ (طلوع سلامت)</span>`
+          : `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-bold text-xs">روژین</span>`;
+        const typeBadge = item.type === "unofficial"
+          ? `<span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md font-bold text-xs">غیررسمی ${toPersianDigits(item.no)}</span>`
+          : `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold text-xs">رسمی ${toPersianDigits(item.no)}</span>`;
+        const cat = detectCategory(item.desc);
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-bold text-slate-500">${toPersianDigits(idx + 1)}</td>
+            <td class="py-3 px-4">${compBadge}</td>
+            <td class="py-3 px-4">${typeBadge}</td>
+            <td class="py-3 px-4 font-semibold text-slate-700">۱۴۰۵/${toPersianDigits(String(item.month).padStart(2, '0'))}/${toPersianDigits(String(item.day).padStart(2, '0'))}</td>
+            <td class="py-3 px-4"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">${cat}</span></td>
+            <td class="py-3 px-4 font-medium text-slate-900">${item.desc}</td>
+            <td class="py-3 px-4 font-extrabold text-slate-900">${formatMoney(item.amount, true)}</td>
+            <td class="py-3 px-4 text-center">
+              <button type="button" data-delete-expense="${item.id}" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-1 rounded hover:bg-rose-50">حذف</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ==========================================
+    // 6. OFFICIAL PRINTABLE REPORT GENERATOR
+    // ==========================================
+    function syncReportNumberOptions() {
+      const comp = document.getElementById("reportCompanySelect").value;
+      const type = document.getElementById("reportTypeSelect").value;
+      const select = document.getElementById("reportNumberSelect");
+
+      const matchingNos = Array.from(new Set(
+        state.expenses
+          .filter(e => (comp === "vana" ? true : e.company === comp) && e.type === type)
+          .map(e => e.no)
+      )).sort((a, b) => b - a);
+
+      if (matchingNos.length === 0) {
+        select.innerHTML = `<option value="14">شماره ۱۴</option>`;
+      } else {
+        select.innerHTML = matchingNos.map(n => `<option value="${n}">تنخواه شماره ${toPersianDigits(n)}</option>`).join("");
+      }
+      renderOfficialSheet();
+    }
+
+    function renderOfficialSheet() {
+      const comp = document.getElementById("reportCompanySelect").value;
+      const type = document.getElementById("reportTypeSelect").value;
+      const no = Number(document.getElementById("reportNumberSelect").value || 14);
+      const prepDateInput = document.getElementById("reportPrepDateInput");
+
+      const companyNames = {
+        rojin: "شرکت آرایشی بهداشتی روژین (سهامی خاص)",
+        akop: "شرکت طلوع سلامت ژیک (سهامی خاص)",
+        vana: "شرکت وانا دارو گستر (سهامی خاص)"
+      };
+
+      const rows = state.expenses.filter(e =>
+        (comp === "vana" ? true : e.company === comp) &&
+        e.type === type &&
+        Number(e.no) === no
+      );
+
+      if (rows.length > 0 && rows[0].prepDate) {
+        prepDateInput.value = rows[0].prepDate;
+      }
+
+      document.getElementById("sheetCompanyTitle").textContent = companyNames[comp] || companyNames.rojin;
+      document.getElementById("sheetSubTitle").textContent = type === "unofficial"
+        ? "صورت خلاصه هزینه‌های انجام شده انبار (غیررسمی)"
+        : "صورت خلاصه هزینه‌های انجام شده انبار";
+
+      document.getElementById("sheetTankhahNo").textContent = `${toPersianDigits(String(no).padStart(2, "0"))} (${type === "unofficial" ? "غیررسمی" : "رسمی"})`;
+      document.getElementById("sheetPrepDate").textContent = toPersianDigits(prepDateInput.value);
+
+      const tbody = document.getElementById("sheetTableBody");
+      let total = 0;
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="border border-slate-800 py-6 text-center text-slate-400">ردیفی برای این شماره تنخواه ثبت نشده است.</td></tr>`;
+      } else {
+        tbody.innerHTML = rows.map((r, idx) => {
+          total += Number(r.amount || 0);
+          return `
+            <tr>
+              <td class="border border-slate-800 py-2 px-2 text-center font-bold">${toPersianDigits(idx + 1)}</td>
+              <td class="border border-slate-800 py-2 px-2 text-center">${toPersianDigits(r.day)}</td>
+              <td class="border border-slate-800 py-2 px-2 text-center">${toPersianDigits(r.month)}</td>
+              <td class="border border-slate-800 py-2 px-2 text-center">${toPersianDigits(r.invoice || "")}</td>
+              <td class="border border-slate-800 py-2 px-3">${r.desc}</td>
+              <td class="border border-slate-800 py-2 px-3 text-left font-bold">${toPersianDigits(Number(r.amount).toLocaleString("en-US"))}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      document.getElementById("sheetTotalAmount").textContent = toPersianDigits(total.toLocaleString("en-US"));
+    }
+
+    // ==========================================
+    // 7. MASTER LEDGER RENDERING
+    // ==========================================
+    function renderLedgerTable() {
+      const tbody = document.getElementById("ledgerTableBody");
+      let runningBalance = 0;
+
+      tbody.innerHTML = state.ledger.map((row, idx) => {
+        const dep = Number(row.deposit || 0);
+        const cost = Number(row.cost || 0);
+        runningBalance += (dep - cost);
+
+        const isDeposit = dep > 0;
+        const balClass = runningBalance >= 0 ? "text-emerald-700 font-extrabold" : "text-rose-600 font-extrabold";
+
+        return `
+          <tr class="${isDeposit ? 'bg-emerald-50/30' : 'hover:bg-slate-50'}">
+            <td class="py-3 px-4 font-bold text-slate-500">${toPersianDigits(idx + 1)}</td>
+            <td class="py-3 px-4 font-bold text-slate-800">${row.title}</td>
+            <td class="py-3 px-4 font-bold text-emerald-700">${dep > 0 ? formatMoney(dep, false) : "—"}</td>
+            <td class="py-3 px-4 font-bold text-rose-700">${cost > 0 ? formatMoney(cost, false) : "—"}</td>
+            <td class="py-3 px-4 ${balClass} dir-ltr text-right">${formatMoney(runningBalance, true)}</td>
+            <td class="py-3 px-4 text-slate-600 font-medium">${toPersianDigits(row.date || "")}</td>
+            <td class="py-3 px-4 text-slate-500 text-xs">${toPersianDigits(row.ref || "")}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ==========================================
+    // 8. BLUBANK SMS & CSV PARSER
+    // ==========================================
+    function parseBluSmsText(rawText) {
+      const clean = toEnglishDigits(rawText || "").trim();
+      if (!clean) return [];
+
+      // Split into blocks if multiple SMS messages are pasted
+      const blocks = clean.split(/\n\s*\n/).filter(b => b.trim().length > 5);
+      const results = [];
+
+      const defaultCompany = document.getElementById("bluTargetCompany").value;
+      const defaultNo = Number(document.getElementById("bluTargetTankhahNo").value || 15);
+      const defaultTypeMode = document.getElementById("bluTargetType").value;
+
+      blocks.forEach(block => {
+        const isDeposit = /واریز|شارژ|افزایش موجودی/.test(block) && !/برداشت|کاهش|خرید/.test(block);
+
+        // Extract amount in Rial
+        let amount = 0;
+        const amountMatch = block.match(/([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{5,12})\s*(ریال|تومان)?/);
+        if (amountMatch) {
+          amount = Number(amountMatch[1].replace(/,/g, ""));
+          if (amountMatch[2] === "تومان") amount *= 10;
+        }
+
+        // Extract date YYYY/MM/DD or MM/DD
+        let year = 1405, month = 8, day = 2;
+        const dateMatch = block.match(/(?:140[3-6]\/)?([0-1]?[0-9])\/([0-3]?[0-9])/);
+        if (dateMatch) {
+          month = Number(dateMatch[1]);
+          day = Number(dateMatch[2]);
+        }
+
+        // Extract description
+        let desc = "";
+        const descLine = block.split("\n").find(l => l.includes("بابت") || l.includes("شرح") || l.includes("بارنامه") || l.includes("کارگر") || l.includes("سوخت") || l.includes("مرجوعی"));
+        if (descLine) {
+          desc = descLine.replace(/^.*?(بابت|شرح)\s*[:：]?\s*/, "").trim();
+        } else {
+          desc = isDeposit ? "واریز شارژ تنخواه به بلوبانک" : "هزینه تنخواه انبار (ثبت از بلوبانک)";
+        }
+
+        // Auto detect company & type
+        let company = defaultCompany;
+        if (desc.includes("مرجوعی") && (desc.includes("پخش") || desc.includes("آران") || desc.includes("سپاهان") || desc.includes("گیل مهر"))) {
+          company = "akop";
+        }
+
+        let expType = "official";
+        if (defaultTypeMode === "official") expType = "official";
+        else if (defaultTypeMode === "unofficial") expType = "unofficial";
+        else {
+          if (desc.includes("کارگر") || desc.includes("روزمزد") || desc.includes("ایاب و ذهاب")) {
+            expType = "unofficial";
+          }
+        }
+
+        if (amount > 0) {
+          results.push({
+            tempId: Date.now() + Math.random(),
+            kind: isDeposit ? "deposit" : "expense",
+            company,
+            expType,
+            no: defaultNo,
+            day,
+            month,
+            year,
+            desc,
+            amount
+          });
+        }
+      });
+
+      return results;
+    }
+
+    function renderParsedQueue() {
+      const container = document.getElementById("parsedPreviewList");
+      const badge = document.getElementById("parsedCountBadge");
+      const confirmBtn = document.getElementById("confirmParsedBtn");
+
+      badge.textContent = `${toPersianDigits(state.parsedQueue.length)} مورد`;
+      confirmBtn.disabled = state.parsedQueue.length === 0;
+
+      if (state.parsedQueue.length === 0) {
+        container.innerHTML = `<div class="text-center py-12 text-slate-400 text-xs">پیامک بلوبانک را در کادر روبرو وارد کنید یا دکمه «نمونه پیامک» را بزنید تا پیش‌نمایش هوشمند نمایش داده شود.</div>`;
+        return;
+      }
+
+      container.innerHTML = state.parsedQueue.map(item => {
+        const isDep = item.kind === "deposit";
+        const badgeHtml = isDep
+          ? `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">واریز شارژ تنخواه</span>`
+          : `<span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full">${item.expType === "unofficial" ? "تنخواه غیررسمی" : "تنخواه رسمی"} شماره ${toPersianDigits(item.no)} (${item.company === "akop" ? "آکوپ" : "روژین"})</span>`;
+
+        return `
+          <div class="p-3.5 rounded-xl border ${isDep ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50'} flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              ${badgeHtml}
+              <span class="text-xs text-slate-500 font-bold">۱۴۰۵/${toPersianDigits(String(item.month).padStart(2, '0'))}/${toPersianDigits(String(item.day).padStart(2, '0'))}</span>
+            </div>
+            <div class="text-xs font-bold text-slate-800 mt-1">${item.desc}</div>
+            <div class="flex items-center justify-between mt-1 pt-1.5 border-t border-slate-200/60">
+              <span class="text-xs text-slate-500">سرفصل: ${isDep ? 'شارژ حساب بلوبانک' : detectCategory(item.desc)}</span>
+              <span class="text-sm font-extrabold ${isDep ? 'text-emerald-700' : 'text-blue-700'}">${formatMoney(item.amount, true)}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ==========================================
+    // 9. CSV EXPORT HELPER
+    // ==========================================
+    function downloadCsv(filename, rows) {
+      const processRow = row => row.map(val => {
+        const s = String(val ?? "").replace(/"/g, '""');
+        return `"${s}"`;
+      }).join(",");
+
+      const csvContent = "\uFEFF" + rows.map(processRow).join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ==========================================
+    // 10. EVENT LISTENERS & INITIALIZATION
+    // ==========================================
+    function switchTab(tabId) {
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+      const target = document.getElementById(`tab-${tabId}`);
+      if (target) target.classList.remove("hidden");
+
+      document.querySelectorAll(".nav-tab").forEach(btn => {
+        if (btn.getAttribute("data-tab") === tabId) {
+          btn.className = "nav-tab active-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition flex items-center gap-2 bg-white text-blue-800 shadow-sm";
+        } else {
+          btn.className = "nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 text-blue-100 hover:bg-white/10";
+        }
+      });
+
+      if (tabId === "dashboard") renderDashboard();
+      if (tabId === "expenses") renderExpensesTable();
+      if (tabId === "report") syncReportNumberOptions();
+      if (tabId === "ledger") renderLedgerTable();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      // Tab switching
+      document.querySelectorAll(".nav-tab").forEach(btn => {
+        btn.addEventListener("click", () => switchTab(btn.getAttribute("data-tab")));
+      });
+
+      document.querySelectorAll("[data-switch-tab]").forEach(btn => {
+        btn.addEventListener("click", () => switchTab(btn.getAttribute("data-switch-tab")));
+      });
+
+      // Shortcut buttons to specific report
+      document.querySelectorAll("[data-goto-report]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const code = btn.getAttribute("data-goto-report");
+          switchTab("report");
+          if (code === "rojin-official-14") {
+            document.getElementById("reportCompanySelect").value = "rojin";
+            document.getElementById("reportTypeSelect").value = "official";
+            syncReportNumberOptions();
+            document.getElementById("reportNumberSelect").value = "14";
+            renderOfficialSheet();
+          } else if (code === "akop-official-6") {
+            document.getElementById("reportCompanySelect").value = "akop";
+            document.getElementById("reportTypeSelect").value = "official";
+            syncReportNumberOptions();
+            document.getElementById("reportNumberSelect").value = "6";
+            renderOfficialSheet();
+          }
+        });
+      });
+
+      // Toggle Rial / Toman
+      document.getElementById("toggleCurrencyBtn").addEventListener("click", () => {
+        state.currency = state.currency === "rial" ? "toman" : "rial";
+        renderDashboard();
+        renderExpensesTable();
+        renderLedgerTable();
+        renderParsedQueue();
+        showToast(`واحد نمایش مبالغ به «${state.currency === "toman" ? "تومان" : "ریال"}» تغییر یافت.`);
+      });
+
+      // Sample BluBank SMS loaders
+      document.getElementById("loadSampleSmsExpense").addEventListener("click", () => {
+        document.getElementById("bluSmsInput").value =
+`بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۳۴۰,۰۰۰,۰۰۰ ریال
+از حساب، انتقال پایا
+بابت: کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه 8129315
+تاریخ ۱۴۰۵/۰۸/۰۳ - ۱۱:۲۰
+
+بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۳۶,۰۰۰,۰۰۰ ریال
+کارت به کارت
+بابت: کارگر روزمزد انبار
+تاریخ ۱۴۰۵/۰۸/۰۳ - ۱۶:۱۰
+
+بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۸۵۰,۰۰۰ ریال
+خرید از درگاه / پوز
+بابت: سوخت خودرو
+تاریخ ۱۴۰۵/۰۸/۰۴ - ۰۸:۱۵`;
+        state.parsedQueue = parseBluSmsText(document.getElementById("bluSmsInput").value);
+        renderParsedQueue();
+      });
+
+      document.getElementById("loadSampleSmsDeposit").addEventListener("click", () => {
+        document.getElementById("bluSmsInput").value =
+`بلو؛ بانک ولی دوست‌داشتنی
+واریز ۷۰۰,۰۰۰,۰۰۰ ریال
+به حساب شما (حواله پایا از شرکت روژین - ملی ۲۰۰۵)
+بابت: شارژ تنخواه مجتبی حنفی
+تاریخ ۱۴۰۵/۰۸/۰۴ - ۰۹:۳۰`;
+        state.parsedQueue = parseBluSmsText(document.getElementById("bluSmsInput").value);
+        renderParsedQueue();
+      });
+
+      document.getElementById("parseSmsBtn").addEventListener("click", () => {
+        const raw = document.getElementById("bluSmsInput").value;
+        state.parsedQueue = parseBluSmsText(raw);
+        renderParsedQueue();
+        if (state.parsedQueue.length > 0) {
+          showToast(`${toPersianDigits(state.parsedQueue.length)} تراکنش بلوبانک با موفقیت استخراج شد.`);
+        } else {
+          showToast("متن پیامک شامل مبلغ معتبر نبود. لطفاً نمونه پیامک را بررسی کنید.");
+        }
+      });
+
+      document.getElementById("clearParsedBtn").addEventListener("click", () => {
+        state.parsedQueue = [];
+        renderParsedQueue();
+      });
+
+      document.getElementById("confirmParsedBtn").addEventListener("click", () => {
+        if (state.parsedQueue.length === 0) return;
+        let addedExp = 0, addedDep = 0;
+
+        state.parsedQueue.forEach(item => {
+          const dateStr = `${item.year}/${String(item.month).padStart(2, "0")}/${String(item.day).padStart(2, "0")}`;
+          if (item.kind === "deposit") {
+            state.ledger.push({
+              id: Date.now() + Math.random(),
+              title: "واریز",
+              deposit: item.amount,
+              cost: 0,
+              date: dateStr,
+              ref: "بلوبانک"
+            });
+            addedDep++;
+          } else {
+            state.expenses.unshift({
+              id: Date.now() + Math.random(),
+              company: item.company,
+              type: item.expType,
+              no: item.no,
+              day: item.day,
+              month: item.month,
+              prepDate: dateStr,
+              invoice: "",
+              desc: item.desc,
+              amount: item.amount
+            });
+
+            // Update or append in ledger summary row
+            const ledgerTitle = item.expType === "unofficial"
+              ? `تنخواه شماره غیر رسمی ${item.no}`
+              : `تنخواه شماره رسمی${item.no}`;
+            const existingRow = state.ledger.find(r => r.title === ledgerTitle);
+            if (existingRow) {
+              existingRow.cost += item.amount;
+              existingRow.date = dateStr;
+            } else {
+              state.ledger.push({
+                id: Date.now() + Math.random(),
+                title: ledgerTitle,
+                deposit: 0,
+                cost: item.amount,
+                date: dateStr,
+                ref: `بلوبانک - تنخواه ${item.no}`
+              });
+            }
+            addedExp++;
+          }
+        });
+
+        state.parsedQueue = [];
+        document.getElementById("bluSmsInput").value = "";
+        saveState();
+        renderParsedQueue();
+        renderDashboard();
+        showToast(`ثبت نهایی انجام شد (${toPersianDigits(addedExp)} هزینه و ${toPersianDigits(addedDep)} واریزی).`);
+      });
+
+      // CSV Upload in BluBank Tab
+      document.getElementById("bluCsvFileInput").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const text = evt.target.result;
+          const lines = text.split(/\r?\n/).filter(l => l.trim());
+          const defaultNo = Number(document.getElementById("bluTargetTankhahNo").value || 15);
+          const extracted = [];
+          lines.slice(1).forEach(line => {
+            const cols = line.split(",");
+            if (cols.length >= 2) {
+              const desc = cols[0].replace(/"/g, "").trim();
+              const amt = Number(toEnglishDigits(cols[1]).replace(/[^0-9]/g, ""));
+              if (amt > 0) {
+                extracted.push({
+                  tempId: Date.now() + Math.random(),
+                  kind: desc.includes("واریز") ? "deposit" : "expense",
+                  company: "rojin",
+                  expType: desc.includes("کارگر") ? "unofficial" : "official",
+                  no: defaultNo,
+                  day: 4,
+                  month: 8,
+                  year: 1405,
+                  desc: desc || "تراکنش فایل CSV بلوبانک",
+                  amount: amt
+                });
+              }
+            }
+          });
+          state.parsedQueue = extracted;
+          renderParsedQueue();
+          showToast(`${toPersianDigits(extracted.length)} ردیف از فایل CSV بارگذاری شد.`);
+        };
+        reader.readAsText(file);
+      });
+
+      // Filters in Expenses Tab
+      ["filterCompany", "filterType", "filterTankhahNo", "filterCategory", "filterSearch"].forEach(id => {
+        document.getElementById(id).addEventListener("input", renderExpensesTable);
+      });
+
+      // Delete expense row
+      document.getElementById("expensesTableBody").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-delete-expense]");
+        if (!btn) return;
+        const id = Number(btn.getAttribute("data-delete-expense"));
+        state.expenses = state.expenses.filter(x => x.id !== id);
+        saveState();
+        renderExpensesTable();
+        showToast("ردیف هزینه حذف شد.");
+      });
+
+      // Export filtered expenses CSV
+      document.getElementById("exportFilteredCsvBtn").addEventListener("click", () => {
+        const rows = [
+          ["ردیف", "شرکت", "نوع تنخواه", "شماره تنخواه", "روز", "ماه", "شرح", "مبلغ ناخالص (ریال)"]
+        ];
+        getFilteredExpenses().forEach((r, i) => {
+          rows.push([
+            i + 1,
+            r.company === "akop" ? "طلوع سلامت ژیک (آکوپ)" : "آرایشی بهداشتی روژین",
+            r.type === "unofficial" ? "غیررسمی" : "رسمی",
+            r.no,
+            r.day,
+            r.month,
+            r.desc,
+            r.amount
+          ]);
+        });
+        downloadCsv("Tankhah_Filtered_1405.csv", rows);
+      });
+
+      // Report Selectors
+      document.getElementById("reportCompanySelect").addEventListener("change", syncReportNumberOptions);
+      document.getElementById("reportTypeSelect").addEventListener("change", syncReportNumberOptions);
+      document.getElementById("reportNumberSelect").addEventListener("change", renderOfficialSheet);
+      document.getElementById("reportPrepDateInput").addEventListener("input", renderOfficialSheet);
+
+      document.getElementById("printReportBtn").addEventListener("click", () => {
+        window.print();
+      });
+
+      document.getElementById("exportSingleReportCsvBtn").addEventListener("click", () => {
+        const comp = document.getElementById("reportCompanySelect").value;
+        const type = document.getElementById("reportTypeSelect").value;
+        const no = Number(document.getElementById("reportNumberSelect").value || 14);
+        const rows = state.expenses.filter(e =>
+          (comp === "vana" ? true : e.company === comp) && e.type === type && Number(e.no) === no
+        );
+        const csvRows = [
+          ["ردیف", "روز", "ماه", "شماره فاکتور", "شرح", "مبلغ ناخالص (ریال)"]
+        ];
+        let sum = 0;
+        rows.forEach((r, idx) => {
+          sum += Number(r.amount || 0);
+          csvRows.push([idx + 1, r.day, r.month, r.invoice || "", r.desc, r.amount]);
+        });
+        csvRows.push(["جمع", "", "", "", "", sum]);
+        downloadCsv(`Sorat_Kholase_Tankhah_${comp}_${type}_${no}.csv`, csvRows);
+      });
+
+      // Export Master Ledger CSV
+      document.getElementById("exportLedgerCsvBtn").addEventListener("click", () => {
+        let bal = 0;
+        const csvRows = [["ردیف", "شرح کالا", "واریز", "قیمت", "مانده", "تاریخ خرید", "لینک اسکن"]];
+        state.ledger.forEach((r, i) => {
+          bal += Number(r.deposit || 0) - Number(r.cost || 0);
+          csvRows.push([i + 1, r.title, r.deposit || "", r.cost || "", bal, r.date || "", r.ref || ""]);
+        });
+        downloadCsv("Tankhah1_Ledger_1405.csv", csvRows);
+      });
+
+      // Quick Add Modal
+      const modal = document.getElementById("quickAddModal");
+      const openModal = (defaultKind = "expense") => {
+        document.getElementById("modalRecordKind").value = defaultKind;
+        const isExp = defaultKind === "expense";
+        document.getElementById("modalExpenseFields").classList.toggle("hidden", !isExp);
+        document.getElementById("modalCompanyWrap").classList.toggle("hidden", !isExp);
+        modal.classList.remove("hidden");
+      };
+
+      document.getElementById("openQuickAddBtn").addEventListener("click", () => openModal("expense"));
+      document.getElementById("addDepositModalBtn").addEventListener("click", () => openModal("deposit"));
+      document.getElementById("closeQuickAddBtn").addEventListener("click", () => modal.classList.add("hidden"));
+      document.getElementById("cancelQuickAddBtn").addEventListener("click", () => modal.classList.add("hidden"));
+
+      document.getElementById("modalRecordKind").addEventListener("change", (e) => {
+        const isExp = e.target.value === "expense";
+        document.getElementById("modalExpenseFields").classList.toggle("hidden", !isExp);
+        document.getElementById("modalCompanyWrap").classList.toggle("hidden", !isExp);
+      });
+
+      document.getElementById("quickAddForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const kind = document.getElementById("modalRecordKind").value;
+        const company = document.getElementById("modalCompany").value;
+        const expType = document.getElementById("modalExpType").value;
+        const no = Number(document.getElementById("modalTankhahNo").value || 15);
+        const invoice = document.getElementById("modalInvoiceNo").value.trim();
+        const day = Number(document.getElementById("modalDay").value);
+        const month = Number(document.getElementById("modalMonth").value);
+        const year = Number(document.getElementById("modalYear").value || 1405);
+        const desc = document.getElementById("modalDesc").value.trim();
+        const amount = Number(document.getElementById("modalAmount").value);
+
+        const dateStr = `${year}/${String(month).padStart(2, "0")}/${String(day).padStart(2, "0")}`;
+
+        if (kind === "deposit") {
+          state.ledger.push({
+            id: Date.now(),
+            title: desc || "واریز",
+            deposit: amount,
+            cost: 0,
+            date: dateStr,
+            ref: "ثبت دستی"
+          });
+        } else {
+          state.expenses.unshift({
+            id: Date.now(),
+            company,
+            type: expType,
+            no,
+            day,
+            month,
+            prepDate: dateStr,
+            invoice,
+            desc,
+            amount
+          });
+
+          const ledgerTitle = expType === "unofficial"
+            ? `تنخواه شماره غیر رسمی ${no}`
+            : `تنخواه شماره رسمی${no}`;
+          const existingRow = state.ledger.find(r => r.title === ledgerTitle);
+          if (existingRow) {
+            existingRow.cost += amount;
+            existingRow.date = dateStr;
+          } else {
+            state.ledger.push({
+              id: Date.now() + 1,
+              title: ledgerTitle,
+              deposit: 0,
+              cost: amount,
+              date: dateStr,
+              ref: invoice
+            });
+          }
+        }
+
+        saveState();
+        modal.classList.add("hidden");
+        document.getElementById("modalDesc").value = "";
+        document.getElementById("modalAmount").value = "";
+        renderDashboard();
+        renderExpensesTable();
+        renderLedgerTable();
+        syncReportNumberOptions();
+        showToast("رکورد جدید با موفقیت ذخیره شد و مانده تنخواه بروزرسانی گردید.");
+      });
+
+
+      // ==========================================
+      // 11. MOBILE AUTO-SMS RADAR (URL PARAMS + CLIPBOARD + ANDROID BRIDGE)
+      // ==========================================
+      state.autoCommitSms = true;
+      state.processedSmsHashes = state.processedSmsHashes || [];
+      state.autoSyncLogs = state.autoSyncLogs || [];
+
+      function hashSms(str) {
+        let h = 0;
+        const clean = String(str || "").trim();
+        for (let i = 0; i < clean.length; i++) {
+          h = ((h << 5) - h) + clean.charCodeAt(i);
+          h |= 0;
+        }
+        return String(h);
+      }
+
+      function renderAutoSyncLogs() {
+        const listEl = document.getElementById("autoSyncLogList");
+        const countEl = document.getElementById("autoSyncLogCount");
+        if (!listEl || !countEl) return;
+        countEl.textContent = `${toPersianDigits(state.autoSyncLogs.length)} پیامک خودکار ثبت شده`;
+        if (state.autoSyncLogs.length === 0) return;
+
+        listEl.innerHTML = state.autoSyncLogs.map(log => `
+          <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span class="font-bold text-slate-800">${log.desc}</span>
+              <span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px] font-semibold text-slate-600">${log.badge}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-extrabold text-emerald-700">${formatMoney(log.amount, true)}</span>
+              <span class="text-[11px] text-slate-400">${toPersianDigits(log.time)}</span>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      function autoProcessIncomingSms(rawSmsText, sourceLabel = "دریافت خودکار از پیامک گوشی") {
+        if (!rawSmsText || rawSmsText.trim().length < 10) return false;
+        const h = hashSms(rawSmsText);
+        if (state.processedSmsHashes.includes(h)) {
+          return false; // Already processed this exact SMS
+        }
+
+        const extracted = parseBluSmsText(rawSmsText);
+        if (extracted.length === 0) return false;
+
+        state.processedSmsHashes.push(h);
+
+        if (state.autoCommitSms) {
+          extracted.forEach(item => {
+            const dateStr = `${item.year}/${String(item.month).padStart(2, "0")}/${String(item.day).padStart(2, "0")}`;
+            if (item.kind === "deposit") {
+              state.ledger.push({
+                id: Date.now() + Math.random(),
+                title: "واریز",
+                deposit: item.amount,
+                cost: 0,
+                date: dateStr,
+                ref: sourceLabel
+              });
+              state.autoSyncLogs.unshift({
+                desc: item.desc,
+                amount: item.amount,
+                badge: "شارژ تنخواه بلوبانک",
+                time: dateStr
+              });
+            } else {
+              state.expenses.unshift({
+                id: Date.now() + Math.random(),
+                company: item.company,
+                type: item.expType,
+                no: item.no,
+                day: item.day,
+                month: item.month,
+                prepDate: dateStr,
+                invoice: "",
+                desc: item.desc,
+                amount: item.amount
+              });
+
+              const ledgerTitle = item.expType === "unofficial"
+                ? `تنخواه شماره غیر رسمی ${item.no}`
+                : `تنخواه شماره رسمی${item.no}`;
+              const existingRow = state.ledger.find(r => r.title === ledgerTitle);
+              if (existingRow) {
+                existingRow.cost += item.amount;
+                existingRow.date = dateStr;
+              } else {
+                state.ledger.push({
+                  id: Date.now() + Math.random(),
+                  title: ledgerTitle,
+                  deposit: 0,
+                  cost: item.amount,
+                  date: dateStr,
+                  ref: `${sourceLabel} - تنخواه ${item.no}`
+                });
+              }
+
+              state.autoSyncLogs.unshift({
+                desc: item.desc,
+                amount: item.amount,
+                badge: `${item.expType === "unofficial" ? "غیررسمی" : "رسمی"} ${item.no} (${item.company === "akop" ? "آکوپ" : "روژین"})`,
+                time: dateStr
+              });
+            }
+          });
+
+          saveState();
+          renderDashboard();
+          renderExpensesTable();
+          renderLedgerTable();
+          syncReportNumberOptions();
+          renderAutoSyncLogs();
+          showToast(`📲 پیامک بلوبانک به صورت خودکار تشخیص داده شد و در تنخواه ثبت گردید!`);
+          return true;
+        } else {
+          state.parsedQueue = [...extracted, ...state.parsedQueue];
+          renderParsedQueue();
+          switchTab("blubank");
+          showToast(`📲 پیامک بلوبانک دریافت شد و آماده تایید شماست.`);
+          return true;
+        }
+      }
+
+      // Expose global bridge for Native Android WebView & MacroDroid
+      window.onBluBankSmsReceived = function(smsBody) {
+        autoProcessIncomingSms(smsBody, "پل خودکار اندروید");
+      };
+
+      // Check URL query parameters (?autosms=... or ?sms=...) when opened by MacroDroid / Shortcuts
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoSmsParam = urlParams.get("autosms") || urlParams.get("sms");
+        if (autoSmsParam) {
+          autoProcessIncomingSms(decodeURIComponent(autoSmsParam), "اتوماسیون پیامک موبایل");
+        }
+      } catch (e) {}
+
+      // Auto-check clipboard on window focus (if user copied SMS or Shortcut copied it)
+      async function tryScanClipboardSilently(showFeedbackIfEmpty = false) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            const clipText = await navigator.clipboard.readText();
+            if (clipText && (clipText.includes("بلو") || clipText.includes("برداشت") || clipText.includes("واریز") || clipText.includes("ریال"))) {
+              const ok = autoProcessIncomingSms(clipText, "رادار خودکار کلیپ‌بورد");
+              if (!ok && showFeedbackIfEmpty) {
+                showToast("این پیامک قبلاً در تنخواه ثبت شده است.");
+              }
+              return;
+            }
+          }
+          if (showFeedbackIfEmpty) {
+            showToast("پیامک جدیدی از بلوبانک در حافظه موقت گوشی یافت نشد.");
+          }
+        } catch (err) {
+          if (showFeedbackIfEmpty) {
+            showToast("برای اسکن خودکار کلیپ‌بورد، دسترسی Paste را در مرورگر گوشی تایید کنید.");
+          }
+        }
+      }
+
+      window.addEventListener("focus", () => {
+        tryScanClipboardSilently(false);
+      });
+
+      // Mobile Tab Buttons
+      document.getElementById("toggleAutoCommitBtn").addEventListener("click", () => {
+        state.autoCommitSms = !state.autoCommitSms;
+        document.getElementById("autoCommitModeLabel").textContent = state.autoCommitSms
+          ? "ثبت آنی بدون سوال"
+          : "انتقال به صف تایید";
+        showToast(`حالت دریافت خودکار به «${document.getElementById("autoCommitModeLabel").textContent}» تغییر کرد.`);
+      });
+
+      document.getElementById("simulateIncomingSmsBtn").addEventListener("click", () => {
+        const randomSamples = [
+          `بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۳۴۰,۰۰۰,۰۰۰ ریال
+بابت: کرایه ارسال بار از کارخانه تبریز به انبار تهران به شماره بارنامه ${Math.floor(8129320 + Math.random() * 90)}
+تاریخ ۱۴۰۵/۰۸/۰۵ - ۱۰:۱۵`,
+          `بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۳۶,۰۰۰,۰۰۰ ریال
+بابت: کارگر روزمزد انبار
+تاریخ ۱۴۰۵/۰۸/۰۵ - ۱۴:۳۰`,
+          `بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۱۸,۵۰۰,۰۰۰ ریال
+بابت: هزینه بابت دریافت مرجوعی از مجید پخش سپاهان
+تاریخ ۱۴۰۵/۰۸/۰۵ - ۱۲:۱۰`,
+          `بلو؛ بانک ولی دوست‌داشتنی
+برداشت ۹۵۰,۰۰۰ ریال
+بابت: سوخت خودرو
+تاریخ ۱۴۰۵/۰۸/۰۵ - ۰۸:۴۵`
+        ];
+        const sample = randomSamples[Math.floor(Math.random() * randomSamples.length)];
+        autoProcessIncomingSms(sample, "رادار خودکار پیامک");
+      });
+
+      document.getElementById("checkClipboardNowBtn").addEventListener("click", () => {
+        tryScanClipboardSilently(true);
+      });
+
+      document.getElementById("installPwaPromptBtn").addEventListener("click", () => {
+        showToast("در مرورگر کروم گوشی، روی منوی ۳ نقطه بالا بزنید و گزینه Add to Home screen را انتخاب کنید.");
+      });
+
+      document.getElementById("downloadMacroConfigBtn").addEventListener("click", () => {
+        const macroJson = {
+          macroName: "BluBank_Auto_Tankhah_Mojtaba_Hanafi",
+          description: "ارسال خودکار پیامک‌های بلوبانک به برنامه تنخواه‌گردانی انبار مجتبی حنفی",
+          trigger: {
+            type: "SMS_RECEIVED",
+            senderFilter: "BluBank / Any",
+            contentContains: "بلو"
+          },
+          actions: [
+            {
+              type: "COPY_TO_CLIPBOARD",
+              text: "{sms_body}"
+            },
+            {
+              type: "OPEN_WEB_PAGE",
+              url: "http://localhost:8080/petty_cash_app.html?autosms={lv=sms_urlencoded}"
+            }
+          ]
+        };
+        const blob = new Blob([JSON.stringify(macroJson, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "BluBank_Auto_Tankhah.macro.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("فایل تنظیمات خودکار MacroDroid دانلود شد.");
+      });
+
+      // Initial render
+      renderDashboard();
+      renderExpensesTable();
+      syncReportNumberOptions();
+      renderLedgerTable();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "تنخواه هوشمند انبار (بلوبانک)",
+  "short_name": "تنخواه بلو",
+  "description": "سامانه هوشمند تنخواه‌گردانی انبار مجتبی حنفی متصل به پیامک بلوبانک",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1d4ed8",
+  "dir": "rtl",
+  "lang": "fa"
+}

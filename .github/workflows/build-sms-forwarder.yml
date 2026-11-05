@@ -1,0 +1,32 @@
+name: Build SMS Forwarder APK
+on:
+  workflow_dispatch:
+  push:
+    paths: ['android-sms-forwarder/**', '.github/workflows/build-sms-forwarder.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-sms-forwarder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.9" }
+      - run: gradle assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tankhah-sms-apk
+          path: android-sms-forwarder/app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish release (direct download link)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: .
+        run: |
+          cp android-sms-forwarder/app/build/outputs/apk/debug/app-debug.apk tankhah-sms.apk
+          gh release delete sms-forwarder-latest --yes --cleanup-tag || true
+          gh release create sms-forwarder-latest tankhah-sms.apk --title "اپ پیامک بانک به تنخواه" --notes "APK نصب‌شدنی؛ راهنما در android-sms-forwarder/README-FA.md" --target ${{ github.sha }}

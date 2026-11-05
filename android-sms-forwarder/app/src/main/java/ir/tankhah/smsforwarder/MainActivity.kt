@@ -1,71 +1,83 @@
 package ir.tankhah.smsforwarder
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.app.DownloadManager
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.view.Gravity
-import android.view.View
-import android.widget.*
+import android.os.Environment
+import android.print.PrintAttributes
+import android.print.PrintManager
+import android.util.Base64
+import android.view.Menu
+import android.view.MenuItem
+import android.webkit.*
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlin.concurrent.thread
 
+/** صفحهٔ اصلی: خود برنامهٔ تنخواه (از سرور) داخل یک WebView؛ دریافت پیامک در پس‌زمینه جداست. */
 class MainActivity : AppCompatActivity() {
+    private lateinit var web: WebView
     private lateinit var p: Prefs
-    private lateinit var status: TextView
+    private var authTries = 0
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         p = Prefs(this)
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad); layoutDirection = View.LAYOUT_DIRECTION_RTL }
-        fun label(t: String) = TextView(this).apply { text = t; setPadding(0, pad / 2, 0, 0); gravity = Gravity.START }
-        fun input(v: String, hint: String) = EditText(this).apply { setText(v); this.hint = hint; setSingleLine(); textDirection = View.TEXT_DIRECTION_LTR; gravity = Gravity.START }
-
-        val url = input(p.url, "http://192.168.1.10:3100")
-        val token = input(p.token, "توکن را از تنظیمات برنامهٔ تنخواه کپی کنید")
-        val senders = input(p.senders, "خالی = پیامک‌هایی که «بلو» یا Blu دارند")
-        val sw = Switch(this).apply { text = "ارسال خودکار پیامک‌ها فعال باشد"; isChecked = p.enabled }
-        status = TextView(this).apply { setPadding(0, pad, 0, 0) }
-
-        root.addView(TextView(this).apply { text = "پیامک بانک ← تنخواه"; textSize = 20f })
-        root.addView(label("آدرس سرور تنخواه")); root.addView(url)
-        root.addView(label("توکن")); root.addView(token)
-        root.addView(label("فرستنده‌های مجاز (با ویرگول جدا کنید)")); root.addView(senders)
-        root.addView(sw)
-
-        fun save() { p.url = url.text.toString(); p.token = token.text.toString(); p.senders = senders.text.toString(); p.enabled = sw.isChecked }
-        root.addView(Button(this).apply { text = "ذخیره و درخواست مجوز پیامک"; setOnClickListener {
-            save()
-            if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED)
-                ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.RECEIVE_SMS), 1)
-            refresh()
-        } })
-        root.addView(Button(this).apply { text = "آزمایش اتصال به سرور"; setOnClickListener { save(); test() } })
-        root.addView(Button(this).apply { text = "ارسال دوبارهٔ پیامک‌های در صف"; setOnClickListener { save(); Uploader.schedule(this@MainActivity); refresh() } })
-        root.addView(status)
-        setContentView(ScrollView(this).apply { addView(root) })
-        refresh()
+        title = "تنخواه"
+        web = WebView(this)
+        setContentView(web)
+        val s = web.settings
+        s.javaScriptEnabled = true; s.domStorageEnabled = true; s.allowFileAccess = false
+        web.addJavascriptInterface(Bridge(), "AndroidApp")
+        web.webViewClient = object : WebViewClient() {
+            override fun onReceivedHttpAuthRequest(view: WebView, handler: HttpAuthHandler, host: String?, realm: String?) {
+                if (p.password.isNotEmpty() && authTries < 3) { authTries++; handler.proceed("tankhah", p.password) }
+                else { handler.cancel(); Toast.makeText(this@MainActivity, "رمز اشتباه است؛ از منو «تنظیمات اپ» رمز را اصلاح کنید", Toast.LENGTH_LONG).show() }
+            }
+            override fun onPageFinished(view: WebView, url: String?) {
+                authTries = 0
+                view.evaluateJavascript("window.print=function(){AndroidApp.print()};", null)
+            }
+            override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
+                if (req.url.toString().startsWith(p.url)) return false
+                startActivity(Intent(Intent.ACTION_VIEW, req.url)); return true
+            }
+        }
+        web.setDownloadListener { url, _, cd, mime, _ ->
+            val r = DownloadManager.Request(Uri.parse(url))
+            if (p.password.isNotEmpty()) r.addRequestHeader("Authorization", "Basic " + Base64.encodeToString("tankhah:${p.password}".toByteArray(), Base64.NO_WRAP))
+            r.setMimeType(mime)
+            r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, cd, mime))
+            (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(r)
+            Toast.makeText(this, "دانلود شروع شد؛ در پوشهٔ Downloads گوشی ذخیره می‌شود", Toast.LENGTH_LONG).show()
+        }
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { if (web.canGoBack()) web.goBack() else finish() }
+        })
     }
 
-    override fun onResume() { super.onResume(); refresh() }
-    private fun refresh() {
-        val perm = ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
-        status.text = "مجوز پیامک: " + (if (perm) "داده شده" else "داده نشده") +
-            "\nپیامک در صف ارسال: ${p.queue().length()}\nآخرین وضعیت: ${p.lastStatus}"
+    override fun onResume() {
+        super.onResume()
+        if (p.url.isEmpty()) { startActivity(Intent(this, SettingsActivity::class.java)); return }
+        if (web.url == null || !web.url!!.startsWith(p.url)) web.loadUrl(p.url)
     }
-    private fun test() {
-        status.text = "در حال آزمایش…"
-        thread {
-            val msg = try {
-                val c = URL(p.url + "/api/sms/ping").openConnection() as HttpURLConnection
-                c.connectTimeout = 8000; c.readTimeout = 8000; c.setRequestProperty("X-Token", p.token)
-                if (c.responseCode == 200) "اتصال موفق بود" else if (c.responseCode == 401) "توکن اشتباه است" else "خطا ${c.responseCode}"
-            } catch (e: Exception) { "سرور در دسترس نیست. آدرس و اتصال به همان شبکه را بررسی کنید." }
-            runOnUiThread { Toast.makeText(this, msg, Toast.LENGTH_LONG).show(); p.lastStatus = msg; refresh() }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.add(0, 1, 0, "بارگذاری مجدد"); menu.add(0, 2, 1, "تنظیمات اپ و پیامک"); return true
+    }
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) { 1 -> web.reload(); 2 -> startActivity(Intent(this, SettingsActivity::class.java)) }
+        return true
+    }
+
+    inner class Bridge {
+        @JavascriptInterface fun print() {
+            runOnUiThread {
+                val pm = getSystemService(PRINT_SERVICE) as PrintManager
+                pm.print("tankhah", web.createPrintDocumentAdapter("tankhah"), PrintAttributes.Builder().build())
+            }
         }
     }
 }

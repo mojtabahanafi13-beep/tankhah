@@ -9,8 +9,14 @@ android {
         applicationId = "ir.tankhah.smsforwarder"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
+    }
+    // امضای ثابت (از Secrets گیت‌هاب) تا نسخه‌های بعدی روی نسخهٔ قبلی نصب شوند
+    System.getenv("KS_PATH")?.let { path ->
+        signingConfigs.getByName("debug").apply {
+            storeFile = file(path); storePassword = System.getenv("KS_PASS"); keyAlias = "tankhah"; keyPassword = System.getenv("KS_PASS")
+        }
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }

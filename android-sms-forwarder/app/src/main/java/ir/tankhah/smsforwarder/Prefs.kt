@@ -14,6 +14,9 @@ class Prefs(ctx: Context) {
     var token: String
         get() = sp.getString("token", "") ?: ""
         set(v) = sp.edit().putString("token", v.trim()).apply()
+    var password: String
+        get() = sp.getString("password", "") ?: ""
+        set(v) = sp.edit().putString("password", v).apply()
     var senders: String
         get() = sp.getString("senders", "") ?: ""
         set(v) = sp.edit().putString("senders", v.trim()).apply()

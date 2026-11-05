@@ -4,7 +4,7 @@ const http = require('http'), fs = require('fs'), path = require('path'), url = 
 const { q, settings, setSetting } = require('./lib/db');
 const S = require('./lib/smart'), J = require('./lib/jalali'), svc = require('./lib/service');
 const bank = require('./lib/bank'), legacy = require('./lib/legacy'), { buildXlsx } = require('./lib/xlsx');
-const PORT = +process.env.PORT || 3100, PUB = path.join(__dirname, 'public');
+const PORT = +process.env.PORT || 8795, PUB = path.join(__dirname, 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.png': 'image/png' };
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -131,6 +131,7 @@ function authOK(req) {
 }
 const server = http.createServer(async (req, res) => {
   try {
+    if (req.url === '/api/health') return json(res, { ok: true, app: 'tankhah' });
     if (req.url.startsWith('/api/sms/')) { // دریافت پیامک از اپ اندروید؛ با توکن، بدون رمز مرورگر
       const tok = req.headers['x-token'] || ''; if (!tok || tok !== settings().sms_token) { res.writeHead(401, { 'Content-Type': 'application/json' }); return res.end('{"error":"توکن نادرست است"}'); }
       if (req.url.startsWith('/api/sms/ping')) return json(res, { ok: true, company: settings().company });

@@ -99,10 +99,58 @@ dialog h3{margin:0 0 12px;font-size:17px}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-start;margin-top:16px}
 #toast{position:fixed;bottom:18px;inset-inline-start:18px;background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;opacity:0;transform:translateY(8px);transition:.18s;pointer-events:none;z-index:99;max-width:min(520px,90vw)}
 #toast.show{opacity:1;transform:none}#toast.err{background:var(--red)}
+.rail a.mo{display:none}
+html,body{overflow-x:hidden}
+main,.hero>*,.cols>*,.grid2>*{min-width:0}
 @media (max-width:900px){
-  .shell{grid-template-columns:1fr}.rail{position:static;height:auto;flex-direction:row;overflow-x:auto;padding:8px}
-  .brand{display:none}.rail a{white-space:nowrap;padding:8px 12px;border-inline-start:0;border-bottom:3px solid transparent}.rail a.on{border-bottom-color:var(--green)}
-  main{padding:18px 14px 50px}.hero,.cols,.grid2{grid-template-columns:1fr}.bal{font-size:32px}
+  .hero,.cols,.grid2{grid-template-columns:1fr}
+  .bal{font-size:34px}
+}
+/* ===== گوشی: نوار پایین، بدون اسکرول افقی، جدول‌ها به شکل کارت ===== */
+@media screen and (max-width:700px){
+  html{font-size:15px}
+  .shell{display:block}
+  .brand{display:none}
+  .rail{position:fixed;inset-inline:0;bottom:0;top:auto;height:auto;flex-direction:row;padding:0 0 env(safe-area-inset-bottom);border-inline-end:0;border-top:1px solid var(--rule);z-index:60;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
+  .rail a{flex:1;text-align:center;padding:11px 2px 9px;font-size:12.5px;border-inline-start:0;border-top:3px solid transparent;white-space:nowrap}
+  .rail a.sec{display:none}.rail a.mo{display:block}
+  .rail a.on{border-top-color:var(--green);background:var(--ok-bg)}
+  main{padding:14px 12px calc(84px + env(safe-area-inset-bottom));max-width:100%}
+  h1{font-size:19px}
+  .head{align-items:flex-start}.head .tools{width:100%}
+  .tools>.btn,.tools>button{flex:1 1 auto;text-align:center}
+  .hero{padding:14px}
+  .bal{font-size:30px}
+  .facts{grid-template-columns:1fr 1fr}
+  .row{gap:8px}
+  .row>label.f,.row>.f{flex:1 1 calc(50% - 8px);min-width:0}
+  .row>label.f[style*="flex:1"]{flex:1 1 100%}
+  label.f input:not([type=checkbox]):not([type=radio]),label.f select,.row select,.row input[type=file]{width:100%;font-size:16px}
+  input,select,textarea{font-size:16px}
+  .row>button,.entry button[type=submit]{flex:1 1 100%;padding:10px}
+  .entry{padding:12px}
+  .hbar{grid-template-columns:95px 1fr 78px;gap:6px;font-size:12px}
+  .sum{gap:14px 20px}
+  .scroll{max-height:none;overflow:visible}
+  .reportlist{grid-template-columns:1fr}
+  .tbl,.tbl tbody,.tbl tfoot{display:block;width:100%}
+  .tbl{border:0;background:transparent;border-radius:0}
+  .tbl thead{display:none}
+  .tbl tr{display:block;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;margin:0 0 10px;padding:6px 12px}
+  .tbl tr:nth-child(even) td,.tbl tr:hover td{background:transparent}
+  .tbl td{display:flex;justify-content:space-between;align-items:baseline;gap:14px;border:0;padding:4px 0;text-align:right}
+  .tbl td::before{content:attr(data-label);color:var(--ink2);font-size:12px;flex:0 0 auto}
+  .tbl td:not([data-label])::before{content:none}
+  .tbl td:empty{display:none}
+  .tbl td.num{text-align:left}
+  .tbl td.act{justify-content:flex-start;flex-wrap:wrap;padding-top:8px}
+  .tbl tfoot tr,.tbl tr.tot{background:var(--rule2);border-top:2px solid var(--green)}
+  .tbl tfoot td{background:transparent;border:0;font-weight:700}
+  .tbl td input,.tbl td select{width:100%;min-width:0}
+  .tbl td[data-label] input{flex:1}
+  dialog{width:96vw;padding:16px}
+  #toast{inset-inline:12px;bottom:78px;max-width:none}
+  .drop{padding:12px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media print{

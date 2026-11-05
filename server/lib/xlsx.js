@@ -140,4 +140,4 @@ function buildXlsx(sheets) {
   entries.push({ name: 'xl/styles.xml', data: Buffer.from(stylesXml()) });
   return zip(entries);
 }
-module.exports = { readXlsx, buildXlsx };
+module.exports = { readXlsx, buildXlsx, unzip };

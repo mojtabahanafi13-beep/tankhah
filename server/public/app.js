@@ -65,9 +65,9 @@ function hbars(items) {
 
 /* ---------- مسیریابی ---------- */
 const routes = {
-  '': home, expenses, settlements, settlement: settlementPage, bank, ledger, reports, report: reportPage, settings,
+  '': home, more, expenses, settlements, settlement: settlementPage, bank, ledger, reports, report: reportPage, settings,
 };
-function setNav(r) { $$('#rail a').forEach(a => a.classList.toggle('on', a.dataset.r === r)); }
+function setNav(r) { const sec = ['ledger', 'reports', 'settings', 'more'].includes(r); $$('#rail a').forEach(a => a.classList.toggle('on', a.dataset.r === r || (a.dataset.r === 'more' && sec))); }
 async function route() {
   const [r, ...args] = (location.hash.replace(/^#\/?/, '').split('?')[0]).split('/'); const key = r || '';
   const nav = key === 'settlement' ? 'settlements' : key === 'report' ? 'reports' : key || 'home'; setNav(nav);
@@ -77,6 +77,23 @@ async function route() {
 }
 window.addEventListener('hashchange', route);
 async function boot() { B = await api('bootstrap'); $('#companyName').textContent = B.settings.company; route(); }
+
+/* ---------- منوی «بیشتر» (گوشی) ---------- */
+async function more() {
+  main.innerHTML = `<div class="head"><h1>بیشتر</h1></div><div class="reportlist">
+    <a href="#/ledger"><b>دفتر گردش</b><span>واریزها، تنخواه‌ها و مانده</span></a>
+    <a href="#/reports"><b>گزارش‌ها</b><span>گزارش‌های دفتر، Excel و PDF</span></a>
+    <a href="#/settings"><b>تنظیمات</b><span>شرکت، رمز، دسته‌ها، ورود اکسل، به‌روزرسانی</span></a></div>`;
+}
+/* جدول‌ها روی گوشی کارت می‌شوند؛ برچسب هر خانه از سرستون ستون گرفته می‌شود */
+function labelTables() {
+  $$('table.tbl').forEach(t => {
+    if (t.dataset.l) return; const hs = [...t.querySelectorAll('thead th')].map(h => h.textContent.trim());
+    t.querySelectorAll('tr').forEach(tr => { let i = 0; [...tr.children].forEach(td => { if (td.tagName === 'TD' && !td.hasAttribute('colspan') && hs[i]) td.dataset.label = hs[i]; i += td.colSpan || 1; }); });
+    t.dataset.l = 1;
+  });
+}
+new MutationObserver(labelTables).observe(main, { childList: true, subtree: true });
 
 /* ---------- داشبورد ---------- */
 async function home() {
@@ -359,6 +376,9 @@ async function settings() {
   <h2>دریافت خودکار پیامک از گوشی اندروید</h2>
   <p class="mut sm" style="margin-top:0">این مقادیر را در اپ اندروید وارد کنید. آدرس سرور = آدرس این برنامه (مثلاً http://192.168.1.10:3100).</p>
   <div class="row"><label class="f">توکن اپ اندروید<input readonly value="${esc(s.sms_token)}" size="30" class="num" onclick="this.select()"></label></div>
+  <h2>به‌روزرسانی برنامه</h2>
+  <p class="mut sm" style="margin-top:0">نسخهٔ فعلی: <span class="num">${esc(B.version || '')}</span>. با این دکمه آخرین نسخه از گیت‌هاب گرفته می‌شود؛ اطلاعات شما دست نمی‌خورد و برنامه چند ثانیه بعد دوباره بالا می‌آید. اپ اندروید نیازی به نصب دوباره ندارد.</p>
+  <button class="ghost" id="upd">به‌روزرسانی از گیت‌هاب</button> <span id="updMsg" class="mut sm"></span>
   <h2>رمز ورود (اختیاری)</h2><div class="row"><label class="f">رمز (خالی = بدون رمز)<input id="s_pw" type="password" placeholder="بدون تغییر"></label></div>
   <div style="margin-top:16px"><button id="s_save">ذخیره تنظیمات</button></div></div>
   <h2>دسته‌های هزینه و کلیدواژه‌ها</h2>
@@ -370,6 +390,13 @@ async function settings() {
   <h2>ورود اطلاعات از اکسل‌های قدیمی</h2>
   <div class="sheet"><p class="mut" style="margin-top:0">فایل‌های اکسل تنخواه قبلی (فرم‌های «صورت خلاصه هزینه‌ها»، شیت مادر <b>m</b> و فایل دفتر گردش) را انتخاب کنید. تنخواه‌های تکراری ردّ می‌شوند و جمع هر تنخواه با دفتر گردش مقایسه می‌شود.</p>
   <div class="row"><label class="f">سال برای شیت m<input id="im_y" class="num" size="6" value="${B.today.slice(0, 4)}"></label><input type="file" id="im_f" accept=".xlsx"></div><div id="im_res"></div></div>`;
+  $('#upd').onclick = guard(async () => {
+    if (!confirm('برنامه به آخرین نسخه به‌روز شود؟')) return;
+    $('#updMsg').textContent = 'در حال دریافت…'; const r = await api('update', { json: {} });
+    $('#updMsg').textContent = `${r.files} فایل به‌روز شد. برنامه در حال راه‌اندازی مجدد است…`;
+    for (let i = 0; i < 40; i++) { await new Promise(r => setTimeout(r, 3000)); try { const h = await (await fetch('/api/health', { cache: 'no-store' })).json(); if (h.ok && h.version !== B.version) { location.reload(); return; } } catch { } }
+    $('#updMsg').textContent = 'راه‌اندازی مجدد طول کشید؛ صفحه را دستی بازخوانی کنید.';
+  });
   $('#s_save').onclick = guard(async () => { await api('settings', { method: 'PUT', json: { company: $('#s_co').value, preparer: $('#s_pre').value, unit: $('#s_unit').value, cover_days: toLatin($('#s_cover').value), deposit_round: toLatin($('#s_round').value).replace(/,/g, ''), auto_deposit: $('#s_dep').checked ? '1' : '0', auto_match: $('#s_match').checked ? '1' : '0', password: $('#s_pw').value ? $('#s_pw').value : '__keep__' } }); B = await api('bootstrap'); $('#companyName').textContent = B.settings.company; toast('ذخیره شد'); });
   $$('[data-sc]').forEach(b => b.onclick = guard(async () => { const id = b.dataset.sc; await api('categories/' + id, { method: 'PUT', json: { name: $(`[data-n="${id}"]`).value, kind: $(`[data-k="${id}"]`).value, keywords: $(`[data-w="${id}"]`).value, active: 1 } }); B = await api('bootstrap'); toast('ذخیره شد'); }));
   $('#nc_add').onclick = guard(async () => { if (!$('#nc_n').value.trim()) return toast('نام دسته را بنویسید', true); await api('categories', { json: { name: $('#nc_n').value, kind: $('#nc_k').value, keywords: $('#nc_w').value } }); B = await api('bootstrap'); toast('دسته اضافه شد'); settings(); });

@@ -3,6 +3,7 @@
 const http = require('http'), fs = require('fs'), path = require('path'), url = require('url');
 const { q, settings, setSetting } = require('./lib/db');
 const S = require('./lib/smart'), J = require('./lib/jalali'), svc = require('./lib/service');
+const upd = require('./lib/update');
 const bank = require('./lib/bank'), legacy = require('./lib/legacy'), { buildXlsx } = require('./lib/xlsx');
 const PORT = +process.env.PORT || 8795, PUB = path.join(__dirname, 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.png': 'image/png' };
@@ -76,7 +77,8 @@ async function api(req, res, u, parts) {
   const m = req.method, qs = u.query;
   const body = async () => { const b = await readBody(req); return b.length ? JSON.parse(b.toString('utf8')) : {}; };
   const [a, b, c] = parts;
-  if (a === 'bootstrap') return json(res, { settings: { ...settings(), password: undefined }, categories: q.all('SELECT * FROM categories ORDER BY sort,id'), today: J.todayJ(), months: J.MONTHS, nextNumbers: { official: svc.nextNumber(+J.todayJ().slice(0, 4), 'official'), unofficial: svc.nextNumber(+J.todayJ().slice(0, 4), 'unofficial') } });
+  if (a === 'update' && m === 'POST') { if (!settings().password) throw new Error('برای به‌روزرسانی ابتدا در تنظیمات رمز ورود بگذارید'); const r = await upd.update(); json(res, r); setTimeout(() => process.exit(0), 800); return; }
+  if (a === 'bootstrap') return json(res, { version: upd.VERSION, settings: { ...settings(), password: undefined }, categories: q.all('SELECT * FROM categories ORDER BY sort,id'), today: J.todayJ(), months: J.MONTHS, nextNumbers: { official: svc.nextNumber(+J.todayJ().slice(0, 4), 'official'), unofficial: svc.nextNumber(+J.todayJ().slice(0, 4), 'unofficial') } });
   if (a === 'settings') { if (m === 'PUT') { const d = await body(); for (const k of ['company', 'preparer', 'unit', 'cover_days', 'deposit_round', 'auto_match', 'auto_deposit']) if (k in d) setSetting(k, d[k]); if (d.password !== undefined && d.password !== '__keep__') setSetting('password', d.password); return ok(res); } }
   if (a === 'categories') {
     if (m === 'POST') { const d = await body(); const r = q.run('INSERT INTO categories(name,kind,keywords,sort) VALUES(?,?,?,99)', d.name, d.kind === 'unofficial' ? 'unofficial' : 'official', d.keywords || ''); S.invalidate(); return json(res, { id: +r.lastInsertRowid }); }
@@ -131,7 +133,7 @@ function authOK(req) {
 }
 const server = http.createServer(async (req, res) => {
   try {
-    if (req.url === '/api/health') return json(res, { ok: true, app: 'tankhah' });
+    if (req.url === '/api/health') return json(res, { ok: true, app: 'tankhah', version: upd.VERSION });
     if (req.url.startsWith('/api/sms/')) { // دریافت پیامک از اپ اندروید؛ با توکن، بدون رمز مرورگر
       const tok = req.headers['x-token'] || ''; if (!tok || tok !== settings().sms_token) { res.writeHead(401, { 'Content-Type': 'application/json' }); return res.end('{"error":"توکن نادرست است"}'); }
       if (req.url.startsWith('/api/sms/ping')) return json(res, { ok: true, company: settings().company });

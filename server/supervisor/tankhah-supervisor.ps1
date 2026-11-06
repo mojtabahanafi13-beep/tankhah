@@ -22,8 +22,10 @@ $mutex = New-Object System.Threading.Mutex($true, 'Global\TankhahSupervisorMutex
 if (-not $created) { exit 0 }
 
 $Node = $null
+$bundled = Join-Path $Root 'node\node.exe'
+if (Test-Path $bundled) { $Node = $bundled }
 $cmd = Get-Command node.exe -ErrorAction SilentlyContinue
-if ($cmd) { $Node = $cmd.Source }
+if (-not $Node -and $cmd) { $Node = $cmd.Source }
 foreach ($p in @('C:\Program Files\nodejs\node.exe', 'C:\Program Files (x86)\nodejs\node.exe')) { if (-not $Node -and (Test-Path $p)) { $Node = $p } }
 if (-not $Node) { Write-Log 'FATAL node.exe not found'; exit 1 }
 

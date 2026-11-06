@@ -1,0 +1,44 @@
+name: Build Windows Installer
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', 'installer/**', '.github/workflows/build-windows-installer.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare files (app + bundled Node 22)
+        shell: pwsh
+        run: |
+          $idx = Invoke-RestMethod https://nodejs.org/dist/index.json
+          $v = ($idx | Where-Object { $_.version -like 'v22.*' } | Select-Object -First 1).version
+          Write-Host "Node $v"
+          Invoke-WebRequest "https://nodejs.org/dist/$v/node-$v-win-x64.zip" -OutFile node.zip
+          Expand-Archive node.zip -DestinationPath nodetmp
+          New-Item -ItemType Directory installer/stage/node -Force | Out-Null
+          Copy-Item "nodetmp/node-$v-win-x64/node.exe" installer/stage/node/node.exe
+          Copy-Item "nodetmp/node-$v-win-x64/LICENSE" installer/stage/node/LICENSE -ErrorAction SilentlyContinue
+          foreach ($d in 'lib','public','supervisor') { Copy-Item "server/$d" "installer/stage/$d" -Recurse }
+          foreach ($f in 'server.js','README-FA.md','restart-tankhah.bat') { Copy-Item "server/$f" installer/stage/ }
+          Copy-Item installer/logo.ico installer/stage/logo.ico
+          $ver = (Select-String -Path server/lib/update.js -Pattern "VERSION = '([^']+)'").Matches[0].Groups[1].Value
+          "APP_VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
+          & $iscc installer/tankhah.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+      - uses: actions/upload-artifact@v4
+        with: { name: Tankhah-Setup, path: installer/out/Tankhah-Setup.exe }
+      - name: Publish release
+        shell: pwsh
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          gh release delete windows-installer-latest --yes --cleanup-tag 2>$null
+          gh release create windows-installer-latest installer/out/Tankhah-Setup.exe --title "Tankhah Windows installer" --notes "Tankhah-Setup.exe - installs to C:\Tankhah (data is kept on upgrade)" --target ${{ github.sha }}

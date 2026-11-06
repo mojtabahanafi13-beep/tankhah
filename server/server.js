@@ -16,7 +16,7 @@ const fmt = n => Math.round(n || 0).toLocaleString('en-US');
 
 /* ---------- خروجی اکسل ---------- */
 function settlementXlsx(id) {
-  const s = svc.getSettlement(id); const st = settings(); const company = s.company || st.company;
+  const s = svc.getSettlement(id); const st = settings(); const company = pickCo(s, st); s.preparer = s.preparer || st.preparer; s.unit = s.unit || st.unit;
   const rows = [];
   rows.push([null, { v: company, s: 'title' }]); rows.push([]); rows.push([null, null, null, null, null, { v: '(ارقام به ریال)', s: 'sub' }]);
   rows.push([]);
@@ -51,8 +51,10 @@ function reportXlsx(rep) {
 
 /* ---------- چاپ فرم تنخواه (HTML آمادهٔ چاپ و ذخیره PDF) ---------- */
 let LOGO_B64 = ''; try { LOGO_B64 = fs.readFileSync(path.join(__dirname, 'public', 'logo.png')).toString('base64'); } catch (e) {}
+const PLACEHOLDER = /نام شرکت را در تنظیمات/;
+const pickCo = (s, st) => (s.status === 'final' && s.company && !PLACEHOLDER.test(s.company)) ? s.company : (st.company && !PLACEHOLDER.test(st.company) ? st.company : (s.company || st.company));
 function printSettlement(id) {
-  const s = svc.getSettlement(id); if (!s) return null; const st = settings(); const company = s.company || st.company;
+  const s = svc.getSettlement(id); if (!s) return null; const st = settings(); const company = pickCo(s, st); s.preparer = s.preparer || st.preparer; s.unit = s.unit || st.unit;
   const rows = s.rows.map((r, i) => { const d = r.date ? r.date.split('/') : ['', '', '']; return `<tr><td class=c>${i + 1}</td><td class=c>${+d[2] || ''}</td><td class=c>${+d[1] || ''}</td><td class=c>${esc(r.invoice_no)}</td><td>${esc(r.description)}</td><td class=n>${fmt(r.amount)}</td></tr>`; }).join('');
   return `<!doctype html><html lang=fa dir=rtl><meta charset=utf-8><title>تنخواه ${svc.KIND_FA[s.kind]} ${s.number}</title><style>
   @page{size:A4;margin:12mm}body{font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;color:#000;margin:0}

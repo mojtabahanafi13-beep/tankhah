@@ -411,7 +411,7 @@ async function settings() {
   <div class="row"><label class="f">توکن اپ اندروید<input readonly value="${esc(s.sms_token)}" size="30" class="num" onclick="this.select()"></label></div>
   <h2>به‌روزرسانی برنامه</h2>
   <p class="mut sm" style="margin-top:0">نسخهٔ فعلی: <span class="num">${esc(B.version || '')}</span>. با این دکمه آخرین نسخه از گیت‌هاب گرفته می‌شود؛ اطلاعات شما دست نمی‌خورد و برنامه چند ثانیه بعد دوباره بالا می‌آید. اپ اندروید نیازی به نصب دوباره ندارد.</p>
-  <button class="ghost" id="upd">به‌روزرسانی از گیت‌هاب</button> <span id="updMsg" class="mut sm"></span>
+  <button class="ghost" id="upd">به‌روزرسانی از گیت‌هاب</button> <label class="btn ghost" style="cursor:pointer">به‌روزرسانی از فایل<input type="file" id="updf" accept=".zip" hidden></label> <span id="updMsg" class="mut sm"></span>
   <h2>رمز ورود (اختیاری)</h2><div class="row"><label class="f">رمز (خالی = بدون رمز)<input id="s_pw" type="password" placeholder="بدون تغییر"></label></div>
   <div style="margin-top:16px"><button id="s_save">ذخیره تنظیمات</button></div></div>
   <h2>دسته‌های هزینه و کلیدواژه‌ها</h2>
@@ -423,12 +423,20 @@ async function settings() {
   <h2>ورود اطلاعات از اکسل‌های قدیمی</h2>
   <div class="sheet"><p class="mut" style="margin-top:0">فایل‌های اکسل تنخواه قبلی (فرم‌های «صورت خلاصه هزینه‌ها»، شیت مادر <b>m</b> و فایل دفتر گردش) را انتخاب کنید. تنخواه‌های تکراری ردّ می‌شوند و جمع هر تنخواه با دفتر گردش مقایسه می‌شود.</p>
   <div class="row"><label class="f">سال برای شیت m<input id="im_y" class="num" size="6" value="${B.today.slice(0, 4)}"></label><input type="file" id="im_f" accept=".xlsx"></div><div id="im_res"></div></div>`;
+  const waitRestart = async () => {
+    $('#updMsg').textContent = 'به‌روز شد. برنامه در حال راه‌اندازی مجدد است (تا حدود یک دقیقه)…';
+    for (let i = 0; i < 60; i++) { await new Promise(r => setTimeout(r, 3000)); try { const h = await (await fetch('/api/health', { cache: 'no-store' })).json(); if (h.ok && h.version !== B.version) { location.reload(); return; } } catch { } }
+    $('#updMsg').textContent = 'راه‌اندازی مجدد طول کشید؛ چند لحظه صبر کنید و صفحه را دستی بازخوانی کنید.';
+  };
   $('#upd').onclick = guard(async () => {
     if (!confirm('برنامه به آخرین نسخه به‌روز شود؟')) return;
-    $('#updMsg').textContent = 'در حال دریافت…'; const r = await api('update', { json: {} });
-    $('#updMsg').textContent = `${r.files} فایل به‌روز شد. برنامه در حال راه‌اندازی مجدد است…`;
-    for (let i = 0; i < 40; i++) { await new Promise(r => setTimeout(r, 3000)); try { const h = await (await fetch('/api/health', { cache: 'no-store' })).json(); if (h.ok && h.version !== B.version) { location.reload(); return; } } catch { } }
-    $('#updMsg').textContent = 'راه‌اندازی مجدد طول کشید؛ صفحه را دستی بازخوانی کنید.';
+    $('#updMsg').textContent = 'در حال دریافت از گیت‌هاب…'; try { await api('update', { json: {} }); } catch (e) { $('#updMsg').textContent = e.message; throw e; }
+    await waitRestart();
+  });
+  $('#updf').onchange = guard(async e => {
+    const f = e.target.files[0]; if (!f) return; if (!confirm('برنامه با این فایل به‌روز شود؟')) return;
+    $('#updMsg').textContent = 'در حال بارگذاری…'; try { await api('update-file', { raw: await f.arrayBuffer() }); } catch (er) { $('#updMsg').textContent = er.message; throw er; }
+    await waitRestart();
   });
   $('#s_save').onclick = guard(async () => { await api('settings', { method: 'PUT', json: { company: $('#s_co').value, preparer: $('#s_pre').value, unit: $('#s_unit').value, cover_days: toLatin($('#s_cover').value), deposit_round: toLatin($('#s_round').value).replace(/,/g, ''), auto_deposit: $('#s_dep').checked ? '1' : '0', auto_match: $('#s_match').checked ? '1' : '0', password: $('#s_pw').value ? $('#s_pw').value : '__keep__' } }); B = await api('bootstrap'); $('#companyName').textContent = B.settings.company; toast('ذخیره شد'); });
   $$('[data-sc]').forEach(b => b.onclick = guard(async () => { const id = b.dataset.sc; await api('categories/' + id, { method: 'PUT', json: { name: $(`[data-n="${id}"]`).value, kind: $(`[data-k="${id}"]`).value, keywords: $(`[data-w="${id}"]`).value, active: 1 } }); B = await api('bootstrap'); toast('ذخیره شد'); }));

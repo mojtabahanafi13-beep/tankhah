@@ -78,6 +78,7 @@ async function api(req, res, u, parts) {
   const m = req.method, qs = u.query;
   const body = async () => { const b = await readBody(req); return b.length ? JSON.parse(b.toString('utf8')) : {}; };
   const [a, b, c] = parts;
+  if (a === 'update-file' && m === 'POST') { if (!settings().password) throw new Error('برای به‌روزرسانی ابتدا در تنظیمات رمز ورود بگذارید'); const r = upd.apply(await readBody(req)); json(res, r); setTimeout(() => process.exit(0), 800); return; }
   if (a === 'update' && m === 'POST') { if (!settings().password) throw new Error('برای به‌روزرسانی ابتدا در تنظیمات رمز ورود بگذارید'); const r = await upd.update(); json(res, r); setTimeout(() => process.exit(0), 800); return; }
   if (a === 'bootstrap') return json(res, { version: upd.VERSION, settings: { ...settings(), password: undefined }, categories: q.all('SELECT * FROM categories ORDER BY sort,id'), today: J.todayJ(), months: J.MONTHS, nextNumbers: { official: svc.nextNumber(+J.todayJ().slice(0, 4), 'official'), unofficial: svc.nextNumber(+J.todayJ().slice(0, 4), 'unofficial') } });
   if (a === 'settings') { if (m === 'PUT') { const d = await body(); for (const k of ['company', 'preparer', 'unit', 'cover_days', 'deposit_round', 'auto_match', 'auto_deposit']) if (k in d) setSetting(k, d[k]); if (d.password !== undefined && d.password !== '__keep__') setSetting('password', d.password); return ok(res); } }

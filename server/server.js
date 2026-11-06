@@ -50,12 +50,13 @@ function reportXlsx(rep) {
 }
 
 /* ---------- چاپ فرم تنخواه (HTML آمادهٔ چاپ و ذخیره PDF) ---------- */
+let LOGO_B64 = ''; try { LOGO_B64 = fs.readFileSync(path.join(__dirname, 'public', 'logo.png')).toString('base64'); } catch (e) {}
 function printSettlement(id) {
   const s = svc.getSettlement(id); if (!s) return null; const st = settings(); const company = s.company || st.company;
   const rows = s.rows.map((r, i) => { const d = r.date ? r.date.split('/') : ['', '', '']; return `<tr><td class=c>${i + 1}</td><td class=c>${+d[2] || ''}</td><td class=c>${+d[1] || ''}</td><td class=c>${esc(r.invoice_no)}</td><td>${esc(r.description)}</td><td class=n>${fmt(r.amount)}</td></tr>`; }).join('');
   return `<!doctype html><html lang=fa dir=rtl><meta charset=utf-8><title>تنخواه ${svc.KIND_FA[s.kind]} ${s.number}</title><style>
   @page{size:A4;margin:12mm}body{font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;color:#000;margin:0}
-  h1{text-align:center;font-size:16px;margin:0 0 4px}.sub{text-align:left;font-size:10px;margin-bottom:6px}
+  h1{text-align:center;font-size:16px;margin:0 0 4px}.lg{position:absolute;top:0;right:0;width:58px;height:58px;object-fit:contain}.sub{text-align:left;font-size:10px;margin-bottom:6px}
   .meta{display:flex;justify-content:space-between;gap:12px;font-weight:700;margin:6px 0}.meta2{display:flex;justify-content:space-between;margin-bottom:8px}
   table{width:100%;border-collapse:collapse}th,td{border:1px solid #444;padding:3px 5px;vertical-align:middle}th{background:#e4ece6}
   td.c{text-align:center;width:1%;white-space:nowrap}td.n{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}tr.t td{font-weight:700;background:#efefef}
@@ -63,7 +64,7 @@ function printSettlement(id) {
   .bar{position:fixed;top:0;inset-inline:0;background:#17301f;color:#fff;padding:8px 16px;font-size:13px;display:flex;gap:10px;align-items:center}@media print{.bar{display:none}body{margin-top:0}}body{margin-top:44px}
   button{font:inherit;padding:4px 12px;cursor:pointer}</style>
   <div class=bar><button onclick=print()>چاپ / ذخیره PDF</button><span>برای PDF در پنجرهٔ چاپ «Save as PDF» را انتخاب کنید.</span></div>
-  <h1>${esc(company)}</h1><div class=sub>(ارقام به ریال)</div>
+  ${s.kind === 'official' && LOGO_B64 ? `<img class=lg src="data:image/png;base64,${LOGO_B64}" alt="">` : ''}<h1>${esc(company)}</h1><div class=sub>(ارقام به ریال)</div>
   <div class=meta><span>شماره تنخواه: ${String(s.number).padStart(2, '0')}${s.kind === 'unofficial' ? ' (غیر رسمی)' : ''}</span><span>صورت خلاصه هزینه‌های انجام شده ${esc(s.unit)}</span><span>تاریخ تهیه: ${s.date}</span></div>
   <div class=meta2><span>نام و نام خانوادگی: ${esc(s.preparer)}</span><span>نام واحد: ${esc(s.unit)}</span></div>
   <table><thead><tr><th>ردیف</th><th>روز</th><th>ماه</th><th>شماره فاکتور</th><th>شرح</th><th>مبلغ ناخالص</th></tr></thead><tbody>${rows}

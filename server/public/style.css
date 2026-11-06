@@ -10,7 +10,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);l
 .shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
 .rail{background:var(--sheet);border-inline-end:1px solid var(--rule);padding:18px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
 .brand{display:flex;gap:10px;align-items:center;padding:0 18px 18px;border-bottom:1px solid var(--rule2);margin-bottom:8px}
-.brand .mark{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px}
+.brand .mark{width:42px;height:42px;object-fit:contain;flex:0 0 auto}
 .brand b{display:block;font-size:15px}.brand small{display:block;color:var(--ink2);font-size:11px;line-height:1.3;max-width:140px}
 .rail a{display:block;padding:9px 18px;color:var(--ink);text-decoration:none;border-inline-start:3px solid transparent}
 .rail a:hover{background:var(--rule2)}

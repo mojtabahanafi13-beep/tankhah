@@ -86,6 +86,7 @@ async function api(req, res, u, parts) {
   }
   if (a === 'dashboard') return json(res, svc.dashboard());
   if (a === 'suggest' && m === 'POST') { const d = await body(); const cl = S.classify(d.description || ''); const ex = S.extract(d.description || ''); return json(res, { ...cl, ...ex, typical: S.typicalAmount(d.description || '') }); }
+  if (a === 'complete') { return json(res, S.complete(qs.q || '')); }
   if (a === 'descriptions') { const rows = q.all(`SELECT description, COUNT(*) n FROM expenses WHERE description!='' GROUP BY description ORDER BY n DESC LIMIT 300`); return json(res, rows.map(r => r.description)); }
   if (a === 'expenses') {
     if (m === 'GET') return json(res, svc.listExpenses(qs));

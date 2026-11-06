@@ -50,6 +50,12 @@ label.f input,label.f select{font-size:14px;color:var(--ink)}
 .entry{background:var(--sheet);border:1px solid var(--rule);border-top:3px solid var(--green);border-radius:8px;padding:14px 16px;margin-bottom:18px}
 .hint{min-height:26px;margin-top:8px;font-size:13px;color:var(--ink2);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .chip{background:var(--ok-bg);border:1px solid #bcdcc6;color:var(--green-d);border-radius:20px;padding:0 10px;font-size:12px;cursor:pointer}
+.descf{position:relative}
+.sugg{position:absolute;inset-inline:0;top:100%;margin-top:2px;background:var(--sheet);border:1px solid var(--green);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.16);z-index:40;overflow:hidden}
+.sg{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--rule2)}
+.sg:last-child{border-bottom:0}.sg:hover,.sg.on{background:var(--ok-bg)}
+.sgt{display:flex;flex-direction:column;min-width:0}.sgt b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sgq{flex:0 0 auto;font-size:12px;padding:5px 10px;border-radius:20px;background:var(--green);color:#fff;border:0;cursor:pointer}
 .chip.warn{background:var(--amber-bg);border-color:#e3d0a0;color:var(--amber)}
 .tag{display:inline-block;font-size:11px;padding:0 8px;border-radius:10px;background:var(--rule2);color:var(--ink2);white-space:nowrap}
 .tag.g{background:var(--ok-bg);color:var(--green-d)} .tag.r{background:var(--red-bg);color:var(--red)} .tag.a{background:var(--amber-bg);color:var(--amber)}

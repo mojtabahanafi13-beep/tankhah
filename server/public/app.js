@@ -137,13 +137,12 @@ async function home() {
 /* ---------- هزینه‌ها ---------- */
 let EX = { status: 'all', q: '', cat: '' };
 async function expenses() {
-  const descs = await api('descriptions');
   main.innerHTML = `
   <div class="head"><div><h1>هزینه‌ها</h1><p class="lead" style="margin:0">هزینه را همین‌جا ثبت کنید؛ دسته، رسمی/غیررسمی، شمارهٔ بارنامه و خودرو را برنامه خودش حدس می‌زند.</p></div></div>
   <form class="entry" id="addForm" autocomplete="off">
     <div class="row">
       <label class="f">تاریخ${dateIn('e_date', B.today)}</label>
-      <label class="f" style="flex:1;min-width:260px">شرح هزینه<input id="e_desc" list="descList" placeholder="مثلاً سوخت خودرو"></label>
+      <label class="f descf" style="flex:1;min-width:260px">شرح هزینه<input id="e_desc" placeholder="مثلاً سوخت خودرو" role="combobox" aria-expanded="false"><div id="sugg" class="sugg" hidden></div></label>
       <label class="f">مبلغ (ریال)<input id="e_amount" class="num" inputmode="numeric" size="14" placeholder="0"></label>
       <label class="f">شماره فاکتور<input id="e_inv" class="num" size="10"></label>
     </div>
@@ -156,7 +155,6 @@ async function expenses() {
       <button type="submit">ثبت هزینه</button>
     </div>
     <div class="hint" id="hint"></div>
-    <datalist id="descList">${descs.map(d => `<option value="${esc(d)}">`).join('')}</datalist>
   </form>
   <div class="row noprint" style="margin-bottom:10px">
     <label class="f">وضعیت<select id="f_status"><option value="all">همه</option><option value="open">تسویه‌نشده</option><option value="settled">تسویه‌شده</option></select></label>
@@ -178,6 +176,41 @@ async function expenses() {
   });
   $('#e_desc').addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(suggest, 300); manualCat = false; });
   $('#e_desc').addEventListener('change', suggest);
+
+  // --- پیشنهاد هوشمند شرح: با تایپ چند حرف، موارد قبلی خود کاربر پیشنهاد می‌شود ---
+  let sg = [], sgi = -1, sgt, sgSeq = 0;
+  const sgBox = $('#sugg');
+  const sgHide = () => { sgBox.hidden = true; sgi = -1; };
+  const sgPaint = () => {
+    if (!sg.length) return sgHide();
+    sgBox.hidden = false;
+    sgBox.innerHTML = sg.map((x, i) => `<div class="sg${i === sgi ? ' on' : ''}" data-i="${i}"><div class="sgt"><b>${esc(x.text)}</b><span class="mut sm">${esc(catName(x.category_id))} · ${x.kind === 'unofficial' ? 'غیررسمی' : 'رسمی'} · ${fmt(x.n)} بار</span></div>${x.amount ? `<button type="button" class="sgq" data-q="${i}" title="با تاریخ و مبلغ بالا همین الان ثبت شود">ثبت فوری ${fmt(x.amount)}</button>` : ''}</div>`).join('');
+  };
+  const sgFetch = async () => { const my = ++sgSeq; try { const r = await api('complete?q=' + encodeURIComponent($('#e_desc').value)); if (my === sgSeq) { sg = r; sgi = -1; sgPaint(); } } catch (e) { sgHide(); } };
+  const sgPick = i => {
+    const x = sg[i]; if (!x) return; sgHide(); manualCat = true;
+    $('#e_desc').value = x.text; if (x.amount) $('#e_amount').value = fmt(x.amount);
+    if (x.category_id) $('#e_cat').value = x.category_id; $$('[name=e_kind]').forEach(r => r.checked = r.value === x.kind);
+    if (x.vehicle && !$('#e_veh').value) $('#e_veh').value = x.vehicle;
+    suggest(); (x.amount ? $('#addForm button[type=submit]') : $('#e_amount')).focus();
+  };
+  const sgQuick = guard(async i => {
+    const x = sg[i]; if (!x) return; sgHide();
+    await api('expenses', { json: { date: $('#e_date').value, description: x.text, amount: x.amount, category_id: x.category_id, kind: x.kind, vehicle: x.vehicle } });
+    toast('ثبت شد: ' + x.text + ' — ' + fmt(x.amount)); $('#e_desc').value = ''; $('#e_amount').value = ''; $('#hint').innerHTML = ''; manualCat = false; $('#e_desc').focus(); loadEx(); sgFetch();
+  });
+  $('#e_desc').addEventListener('input', () => { clearTimeout(sgt); sgt = setTimeout(sgFetch, 120); });
+  $('#e_desc').addEventListener('focus', sgFetch);
+  $('#e_desc').addEventListener('keydown', e => {
+    if (sgBox.hidden) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); sgi = (sgi + 1) % sg.length; sgPaint(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); sgi = (sgi - 1 + sg.length) % sg.length; sgPaint(); }
+    else if (e.key === 'Enter' && sgi >= 0) { e.preventDefault(); sgPick(sgi); }
+    else if (e.key === 'Escape') sgHide();
+  });
+  sgBox.addEventListener('mousedown', e => e.preventDefault());   // فوکوس از کادر نپرد
+  sgBox.addEventListener('click', e => { const q = e.target.closest('[data-q]'); if (q) return sgQuick(+q.dataset.q); const r = e.target.closest('.sg'); if (r) sgPick(+r.dataset.i); });
+  $('#e_desc').addEventListener('blur', () => setTimeout(sgHide, 150));
   $('#e_amount').addEventListener('blur', guard(async () => {  // هشدار مبلغ غیرعادی هنگام ثبت
     const t = ($('#hint').querySelector('#useTyp')); const a = +toLatin($('#e_amount').value).replace(/,/g, ''); const d = $('#e_desc').value.trim();
     if (!d || !a) return; const s = await api('suggest', { json: { description: d } }); if (s.typical && s.typical.n >= 5 && a > s.typical.median * 3) $('#hint').insertAdjacentHTML('beforeend', `<span class="chip warn">این مبلغ حدود ${(a / s.typical.median).toFixed(1)} برابر معمول است — مطمئن هستید؟</span>`);

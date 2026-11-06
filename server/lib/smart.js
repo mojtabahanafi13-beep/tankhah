@@ -95,4 +95,36 @@ function qualityIssues() {
   return issues;
 }
 
-module.exports = { norm, shape, toLatin, parseAmount, extract, classify, typicalAmount, qualityIssues, invalidate, categories };
+
+// ---- تکمیل خودکار شرح هزینه از روی تاریخچهٔ خود کاربر ----
+let cmpCache = null, cmpAt = 0;
+function groups() {
+  if (cmpCache && Date.now() - cmpAt < 4000) return cmpCache;
+  const rows = q.all("SELECT description, amount, category_id, kind, vehicle, date, id FROM expenses WHERE description IS NOT NULL AND description!='' ORDER BY id DESC LIMIT 5000");
+  const m = new Map();
+  for (const r of rows) {
+    const k = shape(r.description); let g = m.get(k);
+    if (!g) { g = { key: k, text: r.description, n: 0, amounts: [], category_id: r.category_id, kind: r.kind, vehicle: r.vehicle || '', date: r.date, last: r.id }; m.set(k, g); }
+    g.n++; if (g.amounts.length < 7 && r.amount > 0) g.amounts.push(r.amount);
+  }
+  cmpCache = [...m.values()]; cmpAt = Date.now(); return cmpCache;
+}
+function complete(text) {
+  const t = shape(text || ''); const words = t.split(' ').filter(Boolean);
+  const out = [];
+  for (const g of groups()) {
+    let rank;
+    if (!t) rank = 3;
+    else if (g.key.startsWith(t)) rank = 0;
+    else if (g.key.includes(' ' + t)) rank = 1;
+    else if (g.key.includes(t)) rank = 2;
+    else if (words.length > 1 && words.every(w => g.key.includes(w))) rank = 2;
+    else continue;
+    const am = [...g.amounts].sort((a, b) => a - b);
+    out.push({ rank, text: g.text, n: g.n, amount: am.length ? am[Math.floor(am.length / 2)] : 0, category_id: g.category_id, kind: g.kind, vehicle: g.vehicle, last: g.last });
+  }
+  out.sort((a, b) => a.rank - b.rank || b.n - a.n || b.last - a.last);
+  return out.slice(0, 6).map(({ rank, last, ...r }) => r);
+}
+
+module.exports = { complete, norm, shape, toLatin, parseAmount, extract, classify, typicalAmount, qualityIssues, invalidate, categories };

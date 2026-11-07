@@ -25,7 +25,7 @@ function settlementXlsx(id) {
   const head = ['ردیف', 'روز', 'ماه', 'شماره فاکتور', 'شرح', 'مبلغ ناخالص'];
   rows.push([null, ...head.map(h => ({ v: h, s: 'head' }))]);
   const first = rows.length;
-  s.rows.forEach((r, i) => { const d = r.date ? r.date.split('/') : ['', '']; rows.push([null, { v: i + 1, s: 'int' }, { v: d[2] ? +d[2] : '', s: 'int' }, { v: d[1] ? +d[1] : '', s: 'int' }, { v: r.invoice_no || '', s: 'text' }, { v: r.description, s: 'text' }, { v: r.amount, s: 'num' }]); });
+  s.rows.forEach((r, i) => { const d = r.date ? r.date.split('/') : ['', '']; rows.push([null, { v: i + 1, s: 'int' }, { v: d[2] ? +d[2] : '', s: 'int' }, { v: d[1] ? +d[1] : '', s: 'int' }, { v: r.invoice_no || '', s: 'text' }, { v: descOf(r), s: 'text' }, { v: r.amount, s: 'num' }]); });
   rows.push([null, { v: 'جمع', s: 'totaltext' }, { v: '', s: 'totaltext' }, { v: '', s: 'totaltext' }, { v: '', s: 'totaltext' }, { v: '', s: 'totaltext' }, { v: s.total, s: 'total' }]);
   rows.push([]); rows.push([]);
   rows.push([null, { v: 'امضاء تهیه‌کننده:', s: 'bold' }, null, { v: 'امضا کنترل‌کننده:', s: 'bold' }, null, { v: 'امضاء تایید‌کننده:', s: 'bold' }]);
@@ -53,9 +53,10 @@ function reportXlsx(rep) {
 let LOGO_B64 = ''; try { LOGO_B64 = fs.readFileSync(path.join(__dirname, 'public', 'logo.png')).toString('base64'); } catch (e) {}
 const PLACEHOLDER = /نام شرکت را در تنظیمات/;
 const pickCo = (s, st) => (s.status === 'final' && s.company && !PLACEHOLDER.test(s.company)) ? s.company : (st.company && !PLACEHOLDER.test(st.company) ? st.company : (s.company || st.company));
+const descOf = r => { const d = String(r.description || '').trim(); const w = r.waybill ? String(r.waybill).trim() : ''; if (!w || d.includes(w)) return d; return /بارنامه\s*[:：]?$/.test(d) ? d + ' ' + w : d + ' - بارنامه ' + w; };
 function printSettlement(id) {
   const s = svc.getSettlement(id); if (!s) return null; const st = settings(); const company = pickCo(s, st); s.preparer = s.preparer || st.preparer; s.unit = s.unit || st.unit;
-  const rows = s.rows.map((r, i) => { const d = r.date ? r.date.split('/') : ['', '', '']; return `<tr><td class=c>${i + 1}</td><td class=c>${+d[2] || ''}</td><td class=c>${+d[1] || ''}</td><td class=c>${esc(r.invoice_no)}</td><td>${esc(r.description)}</td><td class=n>${fmt(r.amount)}</td></tr>`; }).join('');
+  const rows = s.rows.map((r, i) => { const d = r.date ? r.date.split('/') : ['', '', '']; return `<tr><td class=c>${i + 1}</td><td class=c>${+d[2] || ''}</td><td class=c>${+d[1] || ''}</td><td class=c>${esc(r.invoice_no)}</td><td>${esc(descOf(r))}</td><td class=n>${fmt(r.amount)}</td></tr>`; }).join('');
   return `<!doctype html><html lang=fa dir=rtl><meta charset=utf-8><title>تنخواه ${svc.KIND_FA[s.kind]} ${s.number}</title><style>
   @page{size:A4;margin:12mm}body{font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;color:#000;margin:0}
   h1{text-align:center;font-size:16px;margin:0 0 4px}.lg{position:absolute;top:0;right:0;width:58px;height:58px;object-fit:contain}.sub{text-align:left;font-size:10px;margin-bottom:6px}

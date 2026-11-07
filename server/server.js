@@ -110,6 +110,7 @@ async function api(req, res, u, parts) {
     if (m === 'PUT') { svc.updateSettlement(+b, await body()); return ok(res); }
     if (m === 'DELETE') { svc.deleteSettlement(+b); return ok(res); }
   }
+  if (a === 'fund-dupes') return json(res, svc.fundDupes(m === 'POST'));
   if (a === 'fund') {
     if (m === 'POST') { const d = await body(); return json(res, { id: svc.addFund(d) }); }
     if (m === 'GET') return json(res, svc.getFund(+b));

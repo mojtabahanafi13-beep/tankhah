@@ -144,18 +144,34 @@ function previewBank(txs) {
     return { ...t, duplicate: !!dup, candidates: t.direction === 'out' && !dup ? candidates(t) : [], suggestion: sugg ? { category_id: sugg.category_id, kind: sugg.kind, how: sugg.how } : null };
   });
 }
+// واریز دستیِ هم‌مبلغ و هم‌تاریخ (±۳ روز) که هنوز به تراکنش بانک وصل نشده
+function manualDepositFor(t, exclude = []) {
+  return q.all("SELECT id, date FROM fund_entries WHERE type='deposit' AND bank_tx_id IS NULL AND amount=?", t.amount)
+    .filter(f => !exclude.includes(f.id) && Math.abs(J.diffDays(f.date, t.date)) <= 3)
+    .sort((a, b) => Math.abs(J.diffDays(a.date, t.date)) - Math.abs(J.diffDays(b.date, t.date)))[0] || null;
+}
+// واریزهایی که هم دستی ثبت شده‌اند و هم خودکار از بانک/پیامک اضافه شده‌اند
+function fundDupes(apply) {
+  const autos = q.all("SELECT * FROM fund_entries WHERE bank_tx_id IS NOT NULL AND type='deposit' ORDER BY id"); const used = [], out = [];
+  for (const e of autos) {
+    const m = manualDepositFor(e, used); if (!m) continue; used.push(m.id);
+    out.push({ auto_id: e.id, manual_id: m.id, amount: e.amount, auto_date: e.date, manual_date: m.date });
+    if (apply) q.tx(() => { q.run('UPDATE fund_entries SET bank_tx_id=? WHERE id=?', e.bank_tx_id, m.id); q.run('DELETE FROM fund_entries WHERE id=?', e.id); });
+  }
+  return out;
+}
 function commitBank(txs) {
-  const st = settings(); let added = 0, dups = 0, deposits = 0, matched = 0;
+  const st = settings(); let added = 0, dups = 0, deposits = 0, matched = 0, linked = 0;
   q.tx(() => {
     for (const t of txs) {
       if (q.get('SELECT 1 FROM bank_tx WHERE hash=?', t.hash)) { dups++; continue; }
       const id = +q.run('INSERT INTO bank_tx(hash,date,time,direction,amount,balance,description,ref,source) VALUES(?,?,?,?,?,?,?,?,?)', t.hash, t.date, t.time || null, t.direction, t.amount, t.balance ?? null, t.description || '', t.ref || null, t.source || 'statement').lastInsertRowid;
       added++;
-      if (t.direction === 'in' && st.auto_deposit === '1') { q.run('INSERT INTO fund_entries(date,type,amount,note,bank_tx_id) VALUES(?,?,?,?,?)', t.date, 'deposit', t.amount, 'از بانک', id); deposits++; }
+      if (t.direction === 'in' && st.auto_deposit === '1') { const man = manualDepositFor(t); if (man) { q.run('UPDATE fund_entries SET bank_tx_id=? WHERE id=?', id, man.id); linked++; } else { q.run('INSERT INTO fund_entries(date,type,amount,note,bank_tx_id) VALUES(?,?,?,?,?)', t.date, 'deposit', t.amount, 'از بانک', id); deposits++; } }
       if (t.direction === 'out' && st.auto_match === '1') { const c = candidates(t); if (c.length >= 1 && (c.length === 1 || c[0].date === t.date)) { q.run('UPDATE expenses SET bank_tx_id=? WHERE id=?', id, c[0].id); matched++; } }
     }
   });
-  return { added, dups, deposits, matched };
+  return { added, dups, deposits, matched, linked };
 }
 function listBank(f = {}) {
   const w = [], p = [];
@@ -291,4 +307,4 @@ function dashboard() {
     openByKind: q.all(`SELECT kind, COUNT(*) n, SUM(amount) s FROM expenses WHERE settlement_id IS NULL GROUP BY kind`) };
 }
 module.exports = { addExpense, updateExpense, deleteExpense, listExpenses, createSettlement, getSettlement, listSettlements, setSettlementStatus, updateSettlement, deleteSettlement, removeFromSettlement,
-  ledger, addFund, getFund, updateFund, previewBank, commitBank, listBank, linkBank, ignoreBank, expenseFromBank, candidates, runReport, dashboard, KIND_FA, nextNumber, yearOf };
+  ledger, fundDupes, addFund, getFund, updateFund, previewBank, commitBank, listBank, linkBank, ignoreBank, expenseFromBank, candidates, runReport, dashboard, KIND_FA, nextNumber, yearOf };

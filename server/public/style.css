@@ -15,7 +15,10 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);l
 .rail a{display:block;padding:9px 18px;color:var(--ink);text-decoration:none;border-inline-start:3px solid transparent}
 .rail a:hover{background:var(--rule2)}
 .rail a.on{background:var(--ok-bg);border-inline-start-color:var(--green);font-weight:600}
-main{padding:26px 32px 60px;max-width:1240px;width:100%}
+main{padding:26px clamp(16px,2.5vw,48px) 60px;max-width:1600px;width:100%;margin-inline:auto}
+@media screen and (min-width:1500px){html{font-size:16px}}
+@media screen and (min-width:1900px){html{font-size:17px}.shell{grid-template-columns:240px 1fr}}
+@media screen and (max-width:1000px) and (min-width:701px){.shell{grid-template-columns:170px 1fr}main{padding:18px 16px 50px}}
 h1{font-size:22px;margin:0 0 4px;font-weight:700}
 h2{font-size:16px;margin:28px 0 10px;font-weight:700}
 .lead{color:var(--ink2);margin:0 0 18px}
@@ -68,7 +71,7 @@ label.f input,label.f select{font-size:14px;color:var(--ink)}
 .tbl tfoot td,.tbl tr.tot td{background:var(--rule2);font-weight:700;border-top:2px solid var(--green)}
 .tbl td.act{white-space:nowrap;text-align:left}
 .tbl .dim td{color:#8a978e}
-.scroll{overflow:auto;max-height:70vh;border-radius:8px}
+.scroll{overflow:auto;max-height:max(360px,calc(100vh - 230px));border-radius:8px}
 .empty{padding:34px;text-align:center;color:var(--ink2);background:var(--sheet);border:1px dashed var(--rule);border-radius:8px}
 /* داشبورد */
 .hero{display:grid;grid-template-columns:minmax(260px,1.1fr) 2fr;gap:22px;align-items:stretch;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:20px 22px}

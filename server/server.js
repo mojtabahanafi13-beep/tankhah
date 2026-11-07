@@ -117,6 +117,7 @@ async function api(req, res, u, parts) {
     if (m === 'PUT') { svc.updateFund(+b, await body()); return ok(res); }
     if (m === 'DELETE') { q.run('DELETE FROM fund_entries WHERE id=?', +b); return ok(res); }
   }
+  if (a === 'alerts') return json(res, { unmatched: q.get("SELECT COUNT(*) n FROM bank_tx t WHERE t.direction='out' AND t.ignored=0 AND t.source='sms' AND NOT EXISTS(SELECT 1 FROM expenses e WHERE e.bank_tx_id=t.id)").n, unparsed: q.get("SELECT COUNT(*) n FROM sms_inbox WHERE status='unparsed'").n, lastSms: q.get('SELECT MAX(id) m FROM sms_inbox').m || 0 });
   if (a === 'sms-status') return json(res, q.get("SELECT MAX(created_at) last_at, SUM(CASE WHEN created_at >= datetime('now','-1 day') THEN 1 ELSE 0 END) day FROM sms_inbox") || {});
   if (a === 'sms-inbox') {
     if (m === 'GET') return json(res, q.all("SELECT id, sender, body, received, created_at FROM sms_inbox WHERE status='unparsed' ORDER BY id DESC LIMIT 50"));
@@ -163,7 +164,7 @@ const server = http.createServer(async (req, res) => {
         const seen = q.get('SELECT id FROM sms_inbox WHERE hash=?', h);
         if (!seen) q.run('INSERT INTO sms_inbox(hash,sender,body,received,status,parsed) VALUES(?,?,?,?,?,?)', h, d.sender || '', bodyTxt, d.ts ? new Date(+d.ts).toISOString() : null, txs.length ? 'parsed' : 'unparsed', txs.length);
         if (!txs.length) return json(res, { ok: true, parsed: 0, note: 'پیامک تراکنش قابل‌فهم نبود؛ در صفحهٔ بانک می‌توانید دستی ثبتش کنید' });
-        const r = svc.commitBank(txs); console.log('SMS', d.sender, JSON.stringify(r)); return json(res, { ok: true, parsed: txs.length, ...r });
+        const r = svc.commitBank(txs); console.log('SMS', d.sender, JSON.stringify(r)); return json(res, { ok: true, parsed: txs.length, ...r, tx: txs.map(t => ({ direction: t.direction, amount: t.amount })) });
       }
     }
     if (!authOK(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Tankhah"' }); return res.end('نیاز به رمز'); }

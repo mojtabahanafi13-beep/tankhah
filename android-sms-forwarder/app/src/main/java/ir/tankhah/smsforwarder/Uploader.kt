@@ -35,12 +35,31 @@ class Uploader(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
             val code = c.responseCode
             val text = (if (code in 200..299) c.inputStream else c.errorStream)?.bufferedReader()?.readText() ?: ""
             when {
-                code in 200..299 -> { p.lastStatus = "ارسال شد: " + text.take(120); "ok" }
+                code in 200..299 -> { p.lastStatus = "ارسال شد: " + text.take(120); notifyResult(text); "ok" }
                 code == 401 -> { p.lastStatus = "توکن اشتباه است"; "keep" }
                 code >= 500 -> { p.lastStatus = "خطای سرور ($code)"; "retry" }
                 else -> { p.lastStatus = "خطا $code"; "keep" }
             }
         } catch (e: Exception) { p.lastStatus = "سرور در دسترس نیست؛ بعداً دوباره تلاش می‌شود"; "retry" }
+    }
+
+    private fun notifyResult(text: String) {
+        try {
+            val j = JSONObject(text)
+            val parsed = j.optInt("parsed", 0)
+            if (parsed == 0) {
+                Notifier.show(applicationContext, "پیامک بلو دریافت شد", "متن پیامک قابل‌فهم نبود؛ در صفحهٔ بانک برنامه دستی ثبتش کنید.")
+                return
+            }
+            if (j.optInt("added", 0) == 0) return // تکراری بود
+            val tx = j.optJSONArray("tx") ?: return
+            for (i in 0 until tx.length()) {
+                val t = tx.getJSONObject(i)
+                val amt = Notifier.money(t.optLong("amount"))
+                if (t.optString("direction") == "in") Notifier.show(applicationContext, "واریز جدید", "$amt ریال به حساب واریز شد و در دفتر ثبت شد.")
+                else Notifier.show(applicationContext, "برداشت جدید", "$amt ریال برداشت شد. برنامه را باز کنید و هزینه‌اش را ثبت کنید.")
+            }
+        } catch (e: Exception) { }
     }
 
     companion object {

@@ -43,8 +43,9 @@ class SettingsActivity : AppCompatActivity() {
         root.addView(Button(this).apply { text = "ذخیره و درخواست مجوز پیامک"; setOnClickListener {
             save()
             if (ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED)
-                ActivityCompat.requestPermissions(this@SettingsActivity, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), 1)
+                ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED ||
+                (android.os.Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED))
+                ActivityCompat.requestPermissions(this@SettingsActivity, (if (android.os.Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS, Manifest.permission.POST_NOTIFICATIONS) else arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS)), 1)
             if (p.enabled) InboxSync.schedulePeriodic(this@SettingsActivity)
             refresh()
         } })

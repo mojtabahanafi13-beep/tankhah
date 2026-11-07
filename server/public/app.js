@@ -76,7 +76,19 @@ async function route() {
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
-async function boot() { B = await api('bootstrap'); $('#companyName').textContent = B.settings.company; route(); }
+/* ---- هشدار تراکنش جدید بانک: شمارنده روی منوی «بانک» + صدا و پیام ---- */
+let ALR = null;
+function beep() { try { const c = new (window.AudioContext || window.webkitAudioContext)(); [880, 1175].forEach((f, i) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = f; o.connect(g); g.connect(c.destination); g.gain.setValueAtTime(.18, c.currentTime + i * .18); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + i * .18 + .16); o.start(c.currentTime + i * .18); o.stop(c.currentTime + i * .18 + .17); }); } catch (e) { } }
+async function pollAlerts() {
+  try {
+    const a = await api('alerts'); const n = (a.unmatched || 0) + (a.unparsed || 0);
+    $$('#rail a[data-r="bank"]').forEach(l => { let b = l.querySelector('.bdg'); if (!n) { if (b) b.remove(); return; } if (!b) { b = document.createElement('span'); b.className = 'bdg'; l.appendChild(b); } b.textContent = n > 99 ? '99+' : n; });
+    document.title = (n ? '(' + n + ') ' : '') + 'تنخواه‌گردانی';
+    if (ALR && a.lastSms > ALR.lastSms) { beep(); toast('📩 پیامک جدید بانک رسید' + (n ? ' — ' + n + ' مورد منتظر ثبت هزینه' : '')); if (location.hash.startsWith('#/bank')) loadBank($('#bs') ? $('#bs').value : ''); }
+    ALR = a;
+  } catch (e) { }
+}
+async function boot() { B = await api('bootstrap'); $('#companyName').textContent = B.settings.company; route(); pollAlerts(); setInterval(pollAlerts, 20000); }
 
 /* ---------- منوی «بیشتر» (گوشی) ---------- */
 async function more() {

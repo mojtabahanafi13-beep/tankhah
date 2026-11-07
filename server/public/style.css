@@ -109,6 +109,9 @@ dialog h3{margin:0 0 12px;font-size:17px}
 #toast{position:fixed;bottom:18px;inset-inline-start:18px;background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;opacity:0;transform:translateY(8px);transition:.18s;pointer-events:none;z-index:99;max-width:min(520px,90vw)}
 #toast.show{opacity:1;transform:none}#toast.err{background:var(--red)}
 .rail a.mo{display:none}
+.bdg{display:inline-block;min-width:20px;padding:1px 6px;margin-inline-start:8px;border-radius:12px;background:var(--red);color:#fff;font-size:12px;font-weight:700;text-align:center;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.15)}}
+@media (prefers-reduced-motion:reduce){.bdg{animation:none}}
 html,body{overflow-x:hidden}
 main,.hero>*,.cols>*,.grid2>*{min-width:0}
 @media (max-width:900px){

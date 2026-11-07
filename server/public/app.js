@@ -353,10 +353,27 @@ async function ledger() {
     <label class="f" style="flex:1">توضیح<input id="f_note"></label><button>افزودن</button></div><div class="mut sm" style="margin-top:6px">واریزهای بانک با وارد کردن صورت‌حساب خودکار اضافه می‌شوند؛ این فرم برای واریزهای خارج از بانک است. «اول دوره» مانده را از آن تاریخ به مبلغ ثابت تنظیم می‌کند.</div></form>
   ${rows.length ? `<div class="scroll"><table class="tbl"><thead><tr><th>تاریخ</th><th>شرح</th><th class="num">واریز</th><th class="num">برداشت</th><th class="num">مانده</th><th class="noprint"></th></tr></thead><tbody>${rows.map(r => `
     <tr><td class="num">${r.date}</td><td>${r.settlement_id ? `<a href="#/settlement/${r.settlement_id}">${esc(r.title)}</a>` : esc(r.title)}</td><td class="num pos">${r.deposit ? fmt(r.deposit) : ''}</td><td class="num">${r.spend ? fmt(r.spend) : ''}</td><td class="num ${balCls(r.balance)}"><b>${fmt(r.balance)}</b></td>
-    <td class="act noprint">${r.fund_id ? `<button class="danger sm" data-df="${r.fund_id}">حذف</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">برای ${year} واریز یا تنخواهی ثبت نشده. اگر از سال قبل مانده دارید، با «اول دوره» ثبت کنید.</div>`}`;
+    <td class="act noprint">${r.fund_id ? `<button class="ghost sm" data-ef="${r.fund_id}">ویرایش</button> <button class="danger sm" data-df="${r.fund_id}">حذف</button>` : `<a class="btn ghost sm" href="#/settlement/${r.settlement_id}">باز کردن</a>`}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">برای ${year} واریز یا تنخواهی ثبت نشده. اگر از سال قبل مانده دارید، با «اول دوره» ثبت کنید.</div>`}`;
   bindMoney($('#f_amt')); $('#ly').onchange = e => { window._ly = e.target.value; ledger(); };
   $('#fundForm').onsubmit = guard(async e => { e.preventDefault(); await api('fund', { json: { date: $('#f_date').value, amount: $('#f_amt').value, type: $('#f_type').value, note: $('#f_note').value } }); toast('ثبت شد'); ledger(); });
-  $$('[data-df]').forEach(b => b.onclick = guard(async () => { if (!confirm('این ردیف از دفتر حذف شود؟')) return; await api('fund/' + b.dataset.df, { method: 'DELETE' }); ledger(); }));
+  const fundDlg = guard(async id => {
+    const f = await api('fund/' + id); const fb = !!f.bank_tx_id;
+    const d = dialog(`<h3>ویرایش ردیف دفتر</h3><div class="row">
+      <label class="f">تاریخ${dateIn('x_date', f.date)}</label>
+      <label class="f">مبلغ (ریال)<input id="x_amt" class="num" size="14" value="${esc(fmt(f.amount))}" ${fb ? 'disabled' : ''}></label>
+      <label class="f">نوع<select id="x_type" ${fb ? 'disabled' : ''}><option value="deposit" ${f.type === 'deposit' ? 'selected' : ''}>واریز</option><option value="opening" ${f.type === 'opening' ? 'selected' : ''}>اول دوره (مانده انتقالی)</option><option value="adjust" ${f.type === 'adjust' ? 'selected' : ''}>اصلاح (+/-)</option></select></label>
+      <label class="f" style="flex:1 1 100%">توضیح<input id="x_note" value="${esc(f.note || '')}"></label></div>
+      ${fb ? '<p class="mut sm">این واریز از بانک آمده؛ مبلغ و نوع آن قابل تغییر نیست، فقط تاریخ و توضیح.</p>' : ''}
+      <div class="row" style="margin-top:12px"><button id="x_save">ذخیره</button><button class="ghost" id="x_cancel">انصراف</button><span style="flex:1"></span><button class="danger" id="x_del">حذف</button></div>`);
+    if (!fb) $('#x_amt').addEventListener('input', e => { const v = toLatin(e.target.value); const neg = v.trim().startsWith('-'); const dg = v.replace(/[^\d]/g, ''); e.target.value = dg ? (neg ? '-' : '') + Number(dg).toLocaleString('en-US') : (neg ? '-' : ''); });
+    $('#x_cancel').onclick = () => d.close();
+    $('#x_save').onclick = guard(async () => { await api('fund/' + id, { method: 'PUT', json: { date: $('#x_date').value, amount: $('#x_amt').value, type: $('#x_type').value, note: $('#x_note').value } }); d.close(); toast('ذخیره شد'); ledger(); });
+    let armed = false; $('#x_del').onclick = guard(async () => {
+      if (!armed) { armed = true; $('#x_del').textContent = 'مطمئنید؟ دوباره بزنید'; setTimeout(() => { armed = false; if ($('#x_del')) $('#x_del').textContent = 'حذف'; }, 4000); return; }
+      await api('fund/' + id, { method: 'DELETE' }); d.close(); toast('حذف شد'); ledger(); });
+  });
+  $$('[data-ef]').forEach(b => b.onclick = () => fundDlg(b.dataset.ef));
+  $$('[data-df]').forEach(b => b.onclick = () => fundDlg(b.dataset.df));
 }
 
 /* ---------- گزارش‌ها ---------- */

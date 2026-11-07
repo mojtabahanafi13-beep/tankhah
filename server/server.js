@@ -111,6 +111,8 @@ async function api(req, res, u, parts) {
   }
   if (a === 'fund') {
     if (m === 'POST') { const d = await body(); return json(res, { id: svc.addFund(d) }); }
+    if (m === 'GET') return json(res, svc.getFund(+b));
+    if (m === 'PUT') { svc.updateFund(+b, await body()); return ok(res); }
     if (m === 'DELETE') { q.run('DELETE FROM fund_entries WHERE id=?', +b); return ok(res); }
   }
   if (a === 'bank') {

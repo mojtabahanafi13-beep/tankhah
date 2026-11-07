@@ -121,6 +121,17 @@ function addFund({ date, type, amount, note }) {
   return +q.run('INSERT INTO fund_entries(date,type,amount,note) VALUES(?,?,?,?)', date, type, amount, note || null).lastInsertRowid;
 }
 
+function getFund(id) { const f = q.get('SELECT * FROM fund_entries WHERE id=?', id); if (!f) throw new Error('ردیف پیدا نشد'); return f; }
+function updateFund(id, { date, type, amount, note }) {
+  const f = getFund(id); const fromBank = !!f.bank_tx_id;
+  date = J.parseDate(date); if (!date) throw new Error('تاریخ نامعتبر است');
+  if (fromBank) { amount = f.amount; type = f.type; } else {
+    amount = S.parseAmount(amount); if (!amount) throw new Error('مبلغ را وارد کنید');
+    type = ['opening', 'deposit', 'adjust'].includes(type) ? type : f.type;
+  }
+  q.run('UPDATE fund_entries SET date=?, type=?, amount=?, note=? WHERE id=?', date, type, amount, note || null, id);
+}
+
 /* ---------- بانک ---------- */
 function candidates(tx, windowDays = 5) {
   const list = q.all('SELECT e.id, e.date, e.description, e.amount FROM expenses e WHERE e.bank_tx_id IS NULL AND e.amount=?', tx.amount);
@@ -280,4 +291,4 @@ function dashboard() {
     openByKind: q.all(`SELECT kind, COUNT(*) n, SUM(amount) s FROM expenses WHERE settlement_id IS NULL GROUP BY kind`) };
 }
 module.exports = { addExpense, updateExpense, deleteExpense, listExpenses, createSettlement, getSettlement, listSettlements, setSettlementStatus, updateSettlement, deleteSettlement, removeFromSettlement,
-  ledger, addFund, previewBank, commitBank, listBank, linkBank, ignoreBank, expenseFromBank, candidates, runReport, dashboard, KIND_FA, nextNumber, yearOf };
+  ledger, addFund, getFund, updateFund, previewBank, commitBank, listBank, linkBank, ignoreBank, expenseFromBank, candidates, runReport, dashboard, KIND_FA, nextNumber, yearOf };

@@ -12,17 +12,17 @@ class Uploader(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
     override fun doWork(): Result {
         val p = Prefs(applicationContext)
         if (p.url.isEmpty() || p.token.isEmpty()) return Result.failure()
-        val q = p.queue(); val left = JSONArray()
+        val q = p.queue(); val sent = HashSet<String>()
         var retry = false
         for (i in 0 until q.length()) {
             val m = q.getJSONObject(i)
             when (post(p, m)) {
-                "ok" -> {}
-                "retry" -> { left.put(m); retry = true }
+                "ok" -> sent.add(p.keyOf(m))
+                "retry" -> retry = true
                 else -> {} // خطای دائمی (مثلاً توکن اشتباه): پیامک حذف نمی‌شود تا کاربر تنظیمات را اصلاح کند
             }
         }
-        p.setQueue(left)
+        p.removeSent(sent)
         return if (retry) Result.retry() else Result.success()
     }
 

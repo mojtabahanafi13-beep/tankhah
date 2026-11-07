@@ -23,6 +23,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
+        run {
+            val pf = Prefs(this)
+            if (pf.enabled) {
+                InboxSync.schedulePeriodic(this)
+                kotlin.concurrent.thread { InboxSync.scan(this) }
+            }
+        }
         p = Prefs(this)
         title = "تنخواه"
         web = WebView(this)

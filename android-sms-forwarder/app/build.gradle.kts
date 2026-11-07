@@ -9,8 +9,8 @@ android {
         applicationId = "ir.tankhah.smsforwarder"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
     }
     // امضای ثابت (از Secrets گیت‌هاب) تا نسخه‌های بعدی روی نسخهٔ قبلی نصب شوند
     System.getenv("KS_PATH")?.let { path ->

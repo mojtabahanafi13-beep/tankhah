@@ -64,18 +64,31 @@ function fromTable(rows) {
   }
   return out;
 }
+const OUT_RE = /برداشت|خرید|پرداخت|کسر|کاهش|کم\s*شد|مصرف|هزینه|خروج|انتقال\s+از|پایا\s*خروجی|ساتنا\s*خروجی|بدهکار|withdraw|debit|purchase/i;
+const IN_RE = /واریز|دریافت|افزایش|اضافه|شارژ|بستانکار|انتقال\s+به\s+حساب\s+شما|deposit|credit/i;
+function parseOne(flat) {
+  const BL = '(?<!کاهش\\s{0,2})(?<!افزایش\\s{0,2})(?<!تغییر\\s{0,2})';
+  const bal = flat.match(new RegExp(BL + '(?:مانده|موجودی)[^\\d\\-+]{0,25}([\\d,٬]{3,})'));
+  let t = flat.replace(new RegExp(BL + '(?:مانده|موجودی)[^\\d\\-+]{0,25}[\\d,٬]{3,}', 'g'), ' ');
+  const dm = flat.match(/(\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})/); const tm = flat.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
+  t = t.replace(/\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}/g, ' ').replace(/\d{1,2}:\d{2}(?::\d{2})?/g, ' ').replace(/\d{4}\*+\d{2,4}|\*{2,}\d{3,4}/g, ' ').replace(/\b\d{9,}\b/g, ' ');
+  let am = t.match(/(?:مبلغ)\s*[:：]?\s*([+\-]?\s*[\d,٬]{3,})/) || t.match(/([+\-]?\s*[\d,٬]{3,})\s*(?:ریال|تومان|IRR|IRT)/i) || t.match(/([+\-]\s*[\d,٬]{4,})/) || t.match(/([\d,٬]{4,})/);
+  if (!am) return null;
+  const unit = /تومان|IRT/i.test(t.slice(am.index, am.index + am[0].length + 12)) ? 'toman' : 'rial';
+  const raw = am[1].replace(/\s/g, ''); let amount = parseAmount(raw.replace(/^[+\-]/, '')); if (unit === 'toman') amount *= 10; if (!amount) return null;
+  let direction = null;
+  if (OUT_RE.test(flat)) direction = 'out';
+  if (IN_RE.test(flat) && !(OUT_RE.test(flat) && /برداشت|خرید|کسر|کاهش|کم\s*شد/.test(flat))) direction = 'in';
+  if (raw.startsWith('-')) direction = 'out'; else if (raw.startsWith('+')) direction = 'in';
+  if (!direction) return null;
+  const d = (dm && parseDate(dm[1])) || null;
+  return { date: d || todayJ(), time: tm ? tm[1] : null, direction, amount, balance: bal ? parseAmount(bal[1]) : null, guessedDate: !d };
+}
 function fromSMS(text) {
   const out = []; const chunks = toLatin(text).replace(/\r/g, '').split(/\n\s*\n+/).map(s => s.trim()).filter(Boolean);
   for (const ch of chunks) {
-    const flat = ch.replace(/\n/g, ' ');
-    let direction = null;
-    if (/برداشت|خرید|پرداخت|کسر|انتقال\s+از|خروج|پایا\s*خروجی|ساتنا\s*خروجی|-\s*[\d,]{4,}/.test(flat)) direction = 'out';
-    if (/واریز|دریافت|افزایش|\+\s*[\d,]{4,}|بستانکار/.test(flat) && !/برداشت|خرید|کسر/.test(flat)) direction = 'in';
-    const am = flat.match(/(?:مبلغ|مبلغ\s*:)?\s*([+\-]?\s*[\d,٬]{4,})\s*(ریال|تومان)?/); if (!am || !direction) continue;
-    let amount = parseAmount(am[1]); if (am[2] === 'تومان') amount *= 10;
-    const bal = flat.match(/مانده\s*[:：]?\s*([\d,٬]{3,})/); const dm = flat.match(/(\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})/); const tm = flat.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
-    if (!amount) continue;
-    const t = { date: (dm && parseDate(dm[1])) || todayJ(), time: tm ? tm[1] : null, direction, amount, balance: bal ? parseAmount(bal[1]) : null, description: flat.slice(0, 220), ref: null, source: 'sms', guessedDate: !(dm && parseDate(dm[1])) };
+    const flat = ch.replace(/\n/g, ' '); const r = parseOne(flat); if (!r) continue;
+    const t = { ...r, description: flat.slice(0, 220), ref: null, source: 'sms' };
     t.hash = hashOf(t); out.push(t);
   }
   return out;

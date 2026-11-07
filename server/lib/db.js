@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS settlements(
 CREATE TABLE IF NOT EXISTS bank_tx(
   id INTEGER PRIMARY KEY, hash TEXT UNIQUE, date TEXT NOT NULL, time TEXT, direction TEXT NOT NULL, amount INTEGER NOT NULL,
   balance INTEGER, description TEXT, ref TEXT, source TEXT, ignored INTEGER DEFAULT 0, note TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS sms_inbox(
+  id INTEGER PRIMARY KEY, hash TEXT UNIQUE, sender TEXT, body TEXT NOT NULL, received TEXT, status TEXT DEFAULT 'unparsed', parsed INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS expenses(
   id INTEGER PRIMARY KEY, date TEXT, description TEXT NOT NULL DEFAULT '', amount INTEGER NOT NULL DEFAULT 0, invoice_no TEXT,
   category_id INTEGER REFERENCES categories(id), kind TEXT NOT NULL DEFAULT 'official', settlement_id INTEGER REFERENCES settlements(id),

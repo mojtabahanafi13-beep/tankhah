@@ -305,9 +305,21 @@ async function bank() {
     <div class="drop"><b>۲) یا متن پیامک‌ها</b><p class="mut sm">پیامک‌ها را پشت‌سرهم بچسبانید و بین هر دو پیامک یک خط خالی بگذارید.</p><textarea class="sms" id="sms" placeholder="برداشت 1,250,000 ریال … مانده 85,000,000"></textarea><button id="smsGo" style="margin-top:6px">خواندن پیامک‌ها</button></div>
   </div>
   <div id="prev"></div>
+  <div id="smsbox"></div>
   <h2>تراکنش‌های ثبت‌شده</h2>
   <div class="row noprint" style="margin-bottom:10px"><label class="f">نمایش<select id="bs"><option value="">همه</option><option value="unmatched">برداشت‌های بدون هزینه</option><option value="matched">تطبیق‌شده</option></select></label></div>
   <div id="blist"></div>`;
+  const loadSms = async () => {
+    const L = await api('sms-inbox'); const box = $('#smsbox'); if (!box) return;
+    box.innerHTML = L.length ? `<div class="note" style="margin:14px 0"><b>${fmt(L.length)} پیامک دریافت شد ولی برنامه نتوانست تراکنش آن را بفهمد</b><div class="mut sm">هیچ پیامکی گم نمی‌شود؛ نوع و مبلغ را خودتان تأیید کنید یا ردش کنید.</div>${L.map(x => `<div class="sg" style="cursor:default;flex-wrap:wrap" data-s="${x.id}"><div class="sgt" style="white-space:normal;flex:1 1 260px"><span class="mut sm">${esc(x.sender)} · ${esc((x.received || x.created_at || '').slice(0, 16).replace('T', ' '))}</span><span>${esc(x.body)}</span></div><button class="sm" data-sc="${x.id}" data-d="out">برداشت</button><button class="sm ghost" data-sc="${x.id}" data-d="in">واریز</button><button class="sm ghost" data-sx="${x.id}">ردکردن</button></div>`).join('')}</div>` : '';
+    $$('[data-sx]').forEach(b => b.onclick = guard(async () => { await api('sms-inbox/' + b.dataset.sx + '/dismiss', { json: {} }); loadSms(); }));
+    $$('[data-sc]').forEach(b => b.onclick = () => {
+      const id = b.dataset.sc, dir = b.dataset.d; const d = dialog(`<h3>ثبت ${dir === 'out' ? 'برداشت' : 'واریز'} از پیامک</h3><div class="row"><label class="f">تاریخ${dateIn('sc_date', B.today)}</label><label class="f">مبلغ (ریال)<input id="sc_amt" class="num" size="14"></label></div><div class="row" style="margin-top:12px"><button id="sc_ok">ثبت</button><button class="ghost" id="sc_no">انصراف</button></div>`);
+      bindMoney($('#sc_amt')); $('#sc_no').onclick = () => d.close();
+      $('#sc_ok').onclick = guard(async () => { await api('sms-inbox/' + id + '/convert', { json: { direction: dir, amount: $('#sc_amt').value, date: $('#sc_date').value } }); d.close(); toast('ثبت شد'); loadSms(); loadBank($('#bs').value); });
+    });
+  };
+  loadSms();
   $('#bs').value = st; $('#bs').onchange = () => loadBank($('#bs').value);
   $('#bf').onchange = guard(async e => { const f = e.target.files[0]; if (!f) return; PREV = await api('bank/preview', { raw: await f.arrayBuffer(), filename: f.name }); showPrev(); });
   $('#smsGo').onclick = guard(async () => { PREV = await api('bank/preview', { json: { sms: $('#sms').value } }); showPrev(); });

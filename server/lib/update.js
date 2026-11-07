@@ -2,7 +2,7 @@
 // به‌روزرسانی از گیت‌هاب: فقط کد برنامه (lib, public, server.js) جایگزین می‌شود؛ پوشهٔ data و logs هرگز دست نمی‌خورد.
 const fs = require('fs'), path = require('path');
 const { unzip } = require('./xlsx');
-const VERSION = '2026-11-07.7';
+const VERSION = '2026-11-07.8';
 const REPO = 'mojtabahanafi13-beep/tankhah', BRANCH = 'main';
 const ROOT = path.join(__dirname, '..');
 const ALLOW = [/^lib\//, /^public\//, /^server\.js$/, /^README-FA\.md$/, /^start-tankhah\.bat$/, /^restart-tankhah\.bat$/];

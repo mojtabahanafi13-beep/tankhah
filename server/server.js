@@ -116,6 +116,16 @@ async function api(req, res, u, parts) {
     if (m === 'PUT') { svc.updateFund(+b, await body()); return ok(res); }
     if (m === 'DELETE') { q.run('DELETE FROM fund_entries WHERE id=?', +b); return ok(res); }
   }
+  if (a === 'sms-inbox') {
+    if (m === 'GET') return json(res, q.all("SELECT id, sender, body, received, created_at FROM sms_inbox WHERE status='unparsed' ORDER BY id DESC LIMIT 50"));
+    if (m === 'POST' && c === 'dismiss') { q.run("UPDATE sms_inbox SET status='dismissed' WHERE id=?", +b); return ok(res); }
+    if (m === 'POST' && c === 'convert') { const d = await body(); const row = q.get('SELECT * FROM sms_inbox WHERE id=?', +b); if (!row) throw new Error('پیدا نشد');
+      const amount = require('./lib/smart').parseAmount(d.amount); if (!amount) throw new Error('مبلغ را وارد کنید'); if (!['in', 'out'].includes(d.direction)) throw new Error('نوع تراکنش را انتخاب کنید');
+      const date = require('./lib/jalali').parseDate(d.date); if (!date) throw new Error('تاریخ نامعتبر است');
+      const t = { date, time: null, direction: d.direction, amount, balance: null, description: String(row.body).replace(/\s+/g, ' ').slice(0, 220), ref: null, source: 'sms' };
+      t.hash = require('crypto').createHash('sha1').update('sms-manual|' + row.id).digest('hex');
+      const r = svc.commitBank([t]); q.run("UPDATE sms_inbox SET status='manual', parsed=1 WHERE id=?", row.id); return json(res, r); }
+  }
   if (a === 'bank') {
     if (b === 'preview' && m === 'POST') {
       let txs; const ct = req.headers['content-type'] || '';
@@ -146,8 +156,11 @@ const server = http.createServer(async (req, res) => {
       const tok = req.headers['x-token'] || ''; if (!tok || tok !== settings().sms_token) { res.writeHead(401, { 'Content-Type': 'application/json' }); return res.end('{"error":"توکن نادرست است"}'); }
       if (req.url.startsWith('/api/sms/ping')) return json(res, { ok: true, company: settings().company });
       if (req.url.startsWith('/api/sms/ingest') && req.method === 'POST') {
-        const d = JSON.parse((await readBody(req)).toString('utf8') || '{}'); const txs = bank.fromSMS(String(d.body || ''));
-        if (!txs.length) return json(res, { ok: true, parsed: 0, note: 'پیامک تراکنش قابل‌فهم نبود' });
+        const d = JSON.parse((await readBody(req)).toString('utf8') || '{}'); const bodyTxt = String(d.body || ''); const txs = bank.fromSMS(bodyTxt);
+        const h = require('crypto').createHash('sha1').update([d.sender || '', bodyTxt].join('|')).digest('hex');
+        const seen = q.get('SELECT id FROM sms_inbox WHERE hash=?', h);
+        if (!seen) q.run('INSERT INTO sms_inbox(hash,sender,body,received,status,parsed) VALUES(?,?,?,?,?,?)', h, d.sender || '', bodyTxt, d.ts ? new Date(+d.ts).toISOString() : null, txs.length ? 'parsed' : 'unparsed', txs.length);
+        if (!txs.length) return json(res, { ok: true, parsed: 0, note: 'پیامک تراکنش قابل‌فهم نبود؛ در صفحهٔ بانک می‌توانید دستی ثبتش کنید' });
         const r = svc.commitBank(txs); console.log('SMS', d.sender, JSON.stringify(r)); return json(res, { ok: true, parsed: txs.length, ...r });
       }
     }

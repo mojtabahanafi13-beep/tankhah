@@ -42,11 +42,34 @@ class SettingsActivity : AppCompatActivity() {
         fun save() { p.url = url.text.toString(); p.token = token.text.toString(); p.senders = senders.text.toString(); p.password = pass.text.toString(); p.enabled = sw.isChecked }
         root.addView(Button(this).apply { text = "ذخیره و درخواست مجوز پیامک"; setOnClickListener {
             save()
-            if (ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED)
-                ActivityCompat.requestPermissions(this@SettingsActivity, arrayOf(Manifest.permission.RECEIVE_SMS), 1)
+            if (ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED)
+                ActivityCompat.requestPermissions(this@SettingsActivity, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), 1)
+            if (p.enabled) InboxSync.schedulePeriodic(this@SettingsActivity)
             refresh()
         } })
         root.addView(Button(this).apply { text = "آزمایش اتصال به سرور"; setOnClickListener { save(); test() } })
+        root.addView(Button(this).apply { text = "بررسی صندوق پیامک ۳۰ روز اخیر و ارسال موارد جاافتاده"; setOnClickListener {
+            save()
+            if (!InboxSync.hasReadPermission(this@SettingsActivity)) { Toast.makeText(this@SettingsActivity, "اول «ذخیره و درخواست مجوز پیامک» را بزنید و مجوز را بدهید", Toast.LENGTH_LONG).show() }
+            else thread {
+                val n = InboxSync.scan(this@SettingsActivity, System.currentTimeMillis() - 30L * 24 * 3600 * 1000)
+                runOnUiThread { Toast.makeText(this@SettingsActivity, "$n پیامک بلو پیدا و برای ارسال آماده شد", Toast.LENGTH_LONG).show(); refresh() }
+            }
+        } })
+        root.addView(Button(this).apply { text = "تشخیص فرستندهٔ پیامک‌های بانکی"; setOnClickListener {
+            val list = InboxSync.financialSenders(this@SettingsActivity)
+            if (list.isEmpty()) Toast.makeText(this@SettingsActivity, "پیامک مالی‌ای پیدا نشد (مجوز خواندن پیامک داده شده؟)", Toast.LENGTH_LONG).show()
+            else android.app.AlertDialog.Builder(this@SettingsActivity).setTitle("فرستندهٔ پیامک بلو را انتخاب کنید")
+                .setItems(list.map { it.first + " — " + it.second }.toTypedArray()) { _, i ->
+                    val cur = senders.text.toString().trim()
+                    senders.setText(if (cur.isEmpty()) list[i].first else cur + "," + list[i].first); save()
+                }.show()
+        } })
+        root.addView(Button(this).apply { text = "حذف محدودیت باتری (برای دریافت مطمئن پیامک)"; setOnClickListener {
+            try { startActivity(android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:" + packageName))) }
+            catch (e: Exception) { startActivity(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
+        } })
         root.addView(Button(this).apply { text = "ارسال دوبارهٔ پیامک‌های در صف"; setOnClickListener { save(); Uploader.schedule(this@SettingsActivity); refresh() } })
         root.addView(Button(this).apply { text = "بازگشت به برنامه تنخواه"; setOnClickListener { save(); finish() } })
         root.addView(status)
@@ -57,7 +80,8 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() { super.onResume(); refresh() }
     private fun refresh() {
         val perm = ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
-        status.text = "مجوز پیامک: " + (if (perm) "داده شده" else "داده نشده") +
+        val rd = InboxSync.hasReadPermission(this)
+        status.text = "مجوز دریافت پیامک: " + (if (perm) "داده شده" else "داده نشده") + "\nمجوز خواندن صندوق پیامک: " + (if (rd) "داده شده" else "داده نشده") + "\n" + p.lastScanInfo +
             "\nپیامک در صف ارسال: ${p.queue().length()}\nآخرین وضعیت: ${p.lastStatus}"
     }
     private fun test() {

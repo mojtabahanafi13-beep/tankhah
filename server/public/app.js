@@ -305,6 +305,7 @@ async function bank() {
     <div class="drop"><b>۲) یا متن پیامک‌ها</b><p class="mut sm">پیامک‌ها را پشت‌سرهم بچسبانید و بین هر دو پیامک یک خط خالی بگذارید.</p><textarea class="sms" id="sms" placeholder="برداشت 1,250,000 ریال … مانده 85,000,000"></textarea><button id="smsGo" style="margin-top:6px">خواندن پیامک‌ها</button></div>
   </div>
   <div id="prev"></div>
+  <div id="smsst" class="mut sm" style="margin:10px 0"></div>
   <div id="smsbox"></div>
   <h2>تراکنش‌های ثبت‌شده</h2>
   <div class="row noprint" style="margin-bottom:10px"><label class="f">نمایش<select id="bs"><option value="">همه</option><option value="unmatched">برداشت‌های بدون هزینه</option><option value="matched">تطبیق‌شده</option></select></label></div>
@@ -319,7 +320,7 @@ async function bank() {
       $('#sc_ok').onclick = guard(async () => { await api('sms-inbox/' + id + '/convert', { json: { direction: dir, amount: $('#sc_amt').value, date: $('#sc_date').value } }); d.close(); toast('ثبت شد'); loadSms(); loadBank($('#bs').value); });
     });
   };
-  loadSms();
+  loadSms(); api('sms-status').then(x => { const e = $('#smsst'); if (e) e.innerHTML = x && x.last_at ? `📩 آخرین پیامک از اپ اندروید: <b>${new Date(x.last_at.replace(' ', 'T') + 'Z').toLocaleString('fa-IR-u-nu-latn', { dateStyle: 'short', timeStyle: 'short', hour12: false })}</b> · در ۲۴ ساعت اخیر: <b>${fmt(x.day || 0)}</b> پیامک` : 'هنوز هیچ پیامکی از اپ اندروید به سرور نرسیده.'; }).catch(() => { });
   $('#bs').value = st; $('#bs').onchange = () => loadBank($('#bs').value);
   $('#bf').onchange = guard(async e => { const f = e.target.files[0]; if (!f) return; PREV = await api('bank/preview', { raw: await f.arrayBuffer(), filename: f.name }); showPrev(); });
   $('#smsGo').onclick = guard(async () => { PREV = await api('bank/preview', { json: { sms: $('#sms').value } }); showPrev(); });
@@ -340,7 +341,7 @@ async function loadBank(state) {
   const rows = await api('bank?' + new URLSearchParams(state ? { state } : {})); const box = $('#blist');
   if (!rows.length) { box.innerHTML = '<div class="empty">هنوز تراکنش بانکی وارد نشده. فایل صورت‌حساب یا متن پیامک را بالا وارد کنید.</div>'; return; }
   box.innerHTML = `<div class="scroll"><table class="tbl"><thead><tr><th>تاریخ</th><th>نوع</th><th class="num">مبلغ</th><th>شرح</th><th>وضعیت / اقدام</th></tr></thead><tbody>${rows.map(t => `
-  <tr class="${t.ignored ? 'dim' : ''}"><td class="num">${t.date}</td><td>${t.direction === 'in' ? '<span class="tag g">واریز</span>' : '<span class="tag r">برداشت</span>'}</td><td class="num">${fmt(t.amount)}</td><td>${esc((t.description || '').slice(0, 100))}</td>
+  <tr class="${t.ignored ? 'dim' : ''}"><td class="num">${t.date}${t.created_at && t.source === 'sms' && Date.now() - new Date(t.created_at.replace(' ', 'T') + 'Z') < 864e5 ? ' <span class="tag g">جدید</span>' : ''}</td><td>${t.direction === 'in' ? '<span class="tag g">واریز</span>' : '<span class="tag r">برداشت</span>'}</td><td class="num">${fmt(t.amount)}</td><td>${esc((t.description || '').slice(0, 100))}</td>
   <td class="act">${t.expense_id ? `<span class="tag g">هزینه: ${esc((t.expense_desc || '').slice(0, 28))}</span> <button class="ghost sm" data-un="${t.id}">لغو تطبیق</button>`
     : t.direction === 'in' ? (t.ignored ? `<span class="tag">نادیده</span> <button class="ghost sm" data-ign="${t.id}" data-v="0">به دفتر برگردان</button>` : `<span class="tag g">واریز در دفتر</span> <button class="ghost sm" data-ign="${t.id}" data-v="1">واریز تنخواه نیست</button>`)
     : t.ignored ? `<span class="tag">نادیده</span> <button class="ghost sm" data-ign="${t.id}" data-v="0">برگردان</button>`

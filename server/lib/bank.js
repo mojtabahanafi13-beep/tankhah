@@ -66,7 +66,9 @@ function fromTable(rows) {
 }
 const OUT_RE = /برداشت|خرید|پرداخت|کسر|کاهش|کم\s*شد|مصرف|هزینه|خروج|انتقال\s+از|پایا\s*خروجی|ساتنا\s*خروجی|بدهکار|withdraw|debit|purchase/i;
 const IN_RE = /واریز|دریافت|افزایش|اضافه|شارژ|بستانکار|انتقال\s+به\s+حساب\s+شما|deposit|credit/i;
+const NOT_TX_RE = /رمز\s*(?:پویا|یکبار|یک\s*بار)|کد\s*(?:تایید|تأیید|فعال)|\bOTP\b|password/i;
 function parseOne(flat) {
+  if (NOT_TX_RE.test(flat)) return null;
   const BL = '(?<!کاهش\\s{0,2})(?<!افزایش\\s{0,2})(?<!تغییر\\s{0,2})';
   const bal = flat.match(new RegExp(BL + '(?:مانده|موجودی)[^\\d\\-+]{0,25}([\\d,٬]{3,})'));
   let t = flat.replace(new RegExp(BL + '(?:مانده|موجودی)[^\\d\\-+]{0,25}[\\d,٬]{3,}', 'g'), ' ');

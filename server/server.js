@@ -117,6 +117,7 @@ async function api(req, res, u, parts) {
     if (m === 'PUT') { svc.updateFund(+b, await body()); return ok(res); }
     if (m === 'DELETE') { q.run('DELETE FROM fund_entries WHERE id=?', +b); return ok(res); }
   }
+  if (a === 'sms-status') return json(res, q.get("SELECT MAX(created_at) last_at, SUM(CASE WHEN created_at >= datetime('now','-1 day') THEN 1 ELSE 0 END) day FROM sms_inbox") || {});
   if (a === 'sms-inbox') {
     if (m === 'GET') return json(res, q.all("SELECT id, sender, body, received, created_at FROM sms_inbox WHERE status='unparsed' ORDER BY id DESC LIMIT 50"));
     if (m === 'POST' && c === 'dismiss') { q.run("UPDATE sms_inbox SET status='dismissed' WHERE id=?", +b); return ok(res); }

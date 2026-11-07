@@ -165,6 +165,9 @@ function commitBank(txs) {
   q.tx(() => {
     for (const t of txs) {
       if (q.get('SELECT 1 FROM bank_tx WHERE hash=?', t.hash)) { dups++; continue; }
+      // همان پیامک با نسخهٔ قدیمی‌تر تشخیص (مثلاً بدون مانده) قبلاً ثبت شده؟
+      if (t.source === 'sms' && q.all('SELECT description, time FROM bank_tx WHERE date=? AND direction=? AND amount=?', t.date, t.direction, t.amount)
+        .some(r => (!r.time || !t.time || r.time === t.time) && S.norm(r.description || '').slice(0, 40) === S.norm(t.description || '').slice(0, 40))) { dups++; continue; }
       const id = +q.run('INSERT INTO bank_tx(hash,date,time,direction,amount,balance,description,ref,source) VALUES(?,?,?,?,?,?,?,?,?)', t.hash, t.date, t.time || null, t.direction, t.amount, t.balance ?? null, t.description || '', t.ref || null, t.source || 'statement').lastInsertRowid;
       added++;
       if (t.direction === 'in' && st.auto_deposit === '1') { const man = manualDepositFor(t); if (man) { q.run('UPDATE fund_entries SET bank_tx_id=? WHERE id=?', id, man.id); linked++; } else { q.run('INSERT INTO fund_entries(date,type,amount,note,bank_tx_id) VALUES(?,?,?,?,?)', t.date, 'deposit', t.amount, 'از بانک', id); deposits++; } }
